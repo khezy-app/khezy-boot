@@ -1,0 +1,24 @@
+plugins {
+    id("khezy.java-library")
+    id("antlr")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0-SNAPSHOT"
+
+ext {
+    antlrVersion = "4.13.1"
+}
+
+dependencies {
+    antlr "org.antlr:antlr4:${antlrVersion}"
+}
+
+generateGrammarSource {
+    maxHeapSize = "64m"
+    arguments += ["-visitor", "-long-messages"]
+}
+
+tasks.named("sourcesJar") {
+    dependsOn(tasks.generateGrammarSource)
+}

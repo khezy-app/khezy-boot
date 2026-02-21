@@ -1,0 +1,25 @@
+plugins {
+    id("khezy.java-use-junit5")
+}
+
+ext {
+    mockitoVersion = "5.21.0"
+}
+
+dependencies {
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+}
+
+tasks.withType(Test).configureEach {
+    // Add a provider that resolves at execution time, not configuration time
+    jvmArgumentProviders.add(new CommandLineArgumentProvider() {
+        @Override
+        Iterable<String> asArguments() {
+            // Find the mockito-core jar in the test runtime classpath
+            def mockitoJar = project.configurations.testRuntimeClasspath.find {
+                it.name.contains("mockito-core")
+            }
+            return mockitoJar ? ["-javaagent:${mockitoJar.absolutePath}"] : []
+        }
+    })
+}

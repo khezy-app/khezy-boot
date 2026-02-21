@@ -1,0 +1,44 @@
+plugins {
+    id "com.vanniktech.maven.publish"
+}
+
+// Docs: https://vanniktech.github.io/gradle-maven-publish-plugin/central/
+mavenPublishing {
+    // 1. Tell the plugin what to publish
+    configureBasedOnAppliedPlugins()
+
+    // 2. Deployment Targets (Replaces your repositories block)
+    // For the new Central Portal (central.sonatype.com)
+    publishToMavenCentral(true)
+
+    // 3. Signing (Replaces your signing block)
+    signAllPublications()
+
+    // 4. POM Metadata (The plugin needs this to generate the POM)
+    pom {
+        name = 'Khezy Kit'
+        description = """
+        A collection of pre-configured Spring Boot modules designed to simplify \
+        common development tasks like exception handling, request logging, security, \
+        and JPA patterns for developers."""
+        url = 'https://github.com/khezy-app/khezy-boot'
+        licenses {
+            license {
+                name = 'The MIT License'
+                url = 'https://opensource.org/licenses/MIT'
+            }
+        }
+        developers {
+            developer {
+                id = 'khezyapp'
+                name = 'Khezy'
+                email = 'khezy.app@gmail.com'
+            }
+        }
+        scm {
+            connection = 'scm:git:git://github.com/khezy-app/khezy-boot.git'
+            developerConnection = 'scm:git:ssh://github.com:khezy-app/khezy-boot.git'
+            url = 'https://github.com/khezy-app/khezy-boot'
+        }
+    }
+}

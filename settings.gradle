@@ -1,0 +1,10 @@
+pluginManagement {
+    includeBuild("build-logic")
+}
+
+rootProject.name = "khezy-boot"
+
+includeBuild("db-query/query-grammar")
+includeBuild("db-query/query-jpa-spec")
+
+includeBuild("examples/db-query-jpa-spec")
