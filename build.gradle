@@ -1,0 +1,31 @@
+
+tasks.register('checkstyleMains') {
+    group = 'verification'
+    description = 'Runs checkstyleMain on the root project and all included builds.'
+
+    // 1. Filter using 'findAll' (Groovy's version of filter)
+    // Use && (AND) to ensure BOTH conditions are met for exclusion
+    def targetBuilds = gradle.includedBuilds.findAll { build ->
+        !build.projectDir.absolutePath.contains("/examples/") &&
+                build.name != 'build-logic'
+    }
+
+    // 2. Register dependencies
+    targetBuilds.each { included ->
+        dependsOn included.task(':checkstyleMain')
+    }
+}
+
+tasks.register('checkstyleTests') {
+    group = 'verification'
+    description = 'Runs checkstyleTest on the root project and all included builds.'
+
+    def targetBuilds = gradle.includedBuilds.findAll { build ->
+        !build.projectDir.absolutePath.contains("/examples/") &&
+                build.name != 'build-logic'
+    }
+
+    targetBuilds.each { included ->
+        dependsOn included.task(':checkstyleTest')
+    }
+}

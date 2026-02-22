@@ -13,12 +13,29 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Visitor implementation that translates an {@link ASTSpec} tree into JPA Criteria API components.
+ * <p>
+ * This class performs the heavy lifting of converting abstract query definitions into
+ * {@link Predicate}, {@link Expression}, and {@link Path} objects, while also handling
+ * complex JPA concerns like dynamic joins, grouping, and aggregate functions.
+ * </p>
+ *
+ * @param <T> the type of the root entity
+ */
 @SuppressWarnings("unchecked")
 public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicate> {
     private final Root<T> root;
     private final CriteriaBuilder cb;
     private final CriteriaQuery<?> query;
 
+    /**
+     * Constructs a visitor with the necessary JPA Criteria context.
+     *
+     * @param root the JPA root from which paths and joins originate
+     * @param query the criteria query being constructed
+     * @param cb the criteria builder used to create predicates and expressions
+     */
     public JpaSpecificationVisitor(final Root<T> root,
                                    final CriteriaQuery<?> query,
                                    final CriteriaBuilder cb) {
@@ -27,6 +44,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         this.query = query;
     }
 
+    /**
+     * Processes the root query specification, applying WHERE, HAVING, and GROUP BY clauses.
+     *
+     * @param querySpec the query specification to visit
+     * @return the combined WHERE clause predicate
+     */
     @Override
     public Predicate visitQuerySpec(final QuerySpec querySpec) {
         // 1. Handle WHERE
@@ -54,6 +77,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         return where;
     }
 
+    /**
+     * Translates a logical OR node into a JPA OR predicate.
+     *
+     * @param orSpec the OR specification
+     * @return a disjunction of child predicates
+     */
     @Override
     public Predicate visitLogicalOrSpec(final LogicalOrSpec orSpec) {
         if (Objects.isNull(orSpec) ||
@@ -70,6 +99,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         return cb.or(predicates);
     }
 
+    /**
+     * Translates a logical AND node into a JPA AND predicate.
+     *
+     * @param andSpec the AND specification
+     * @return a conjunction of child predicates
+     */
     @Override
     public Predicate visitLogicalAndSpec(final LogicalAndSpec andSpec) {
         if (Objects.isNull(andSpec) ||
@@ -86,6 +121,13 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         return cb.and(predicates);
     }
 
+    /**
+     * Translates binary operators (EQ, NE, LT, etc.) into JPA predicates.
+     *
+     * @param binaryComparisonSpec the binary comparison details
+     * @return the resulting JPA predicate
+     * @throws UnsupportedOperationException if an unsupported operator is encountered
+     */
     @Override
     public Predicate visitBinaryComparisonSpec(final BinaryComparisonSpec binaryComparisonSpec) {
         final var expression = getOperand(binaryComparisonSpec.left(), binaryComparisonSpec.joinType());
@@ -103,6 +145,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         };
     }
 
+    /**
+     * Translates an IN comparison into a JPA IN predicate.
+     *
+     * @param inComparisonSpec the IN comparison details
+     * @return the JPA IN predicate
+     */
     @Override
     public Predicate visitInComparisonSpec(final InComparisonSpec inComparisonSpec) {
         final var expression = getOperand(inComparisonSpec.left(), inComparisonSpec.joinType());
@@ -113,6 +161,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         return expression.in(values);
     }
 
+    /**
+     * Translates a BETWEEN comparison into a JPA BETWEEN predicate.
+     *
+     * @param betweenComparisonSpec the BETWEEN comparison details
+     * @return the JPA BETWEEN predicate
+     */
     @Override
     public Predicate visitBetweenComparisonSpec(final BetweenComparisonSpec betweenComparisonSpec) {
         final var joinType = betweenComparisonSpec.joinType();
@@ -121,6 +175,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
                 (Comparable<Object>) getValue(betweenComparisonSpec.to(), joinType));
     }
 
+    /**
+     * Translates unary operators (IS_NULL, IS_NOT_NULL) into JPA predicates.
+     *
+     * @param unaryComparisonSpec the unary comparison details
+     * @return the JPA null-check predicate
+     */
     @Override
     public Predicate visitUnaryComparisonSpec(final UnaryComparisonSpec unaryComparisonSpec) {
         final var path = getOperand(unaryComparisonSpec.left(), unaryComparisonSpec.joinType());
@@ -132,6 +192,13 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         };
     }
 
+    /**
+     * Resolves an {@link Operand} into a JPA {@link Expression}.
+     *
+     * @param operand the operand to resolve
+     * @param joinType the join type to use if joins are required
+     * @return the JPA expression
+     */
     private Expression<?> getOperand(final Operand operand,
                                      final JoinType joinType) {
         if (operand instanceof PathOperand pathOperand) {
@@ -141,7 +208,14 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         }
     }
 
-    // Helper to handle nested paths like "user.address.city"
+    /**
+     * Resolves a {@link PathOperand} into a JPA {@link Path}, automatically creating or
+     * reusing joins for nested paths (e.g., "user.address.city").
+     *
+     * @param path the path operand containing segments
+     * @param joinType the join type to apply when creating new joins
+     * @return the JPA path
+     */
     private Path<?> getPath(final PathOperand path,
                             final JoinType joinType) {
         final var parts = path.identifiers();
@@ -163,6 +237,13 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         return currentFrom.get(parts.get(parts.size() - 1));
     }
 
+    /**
+     * Translates an {@link AggregateOperand} into a JPA aggregate function expression.
+     *
+     * @param agg the aggregate operand
+     * @param joinType the join type for the underlying path
+     * @return the aggregate expression
+     */
     private Expression<?> getAggregate(final AggregateOperand agg,
                                       final JoinType joinType) {
         return switch (agg.function()) {
@@ -174,6 +255,13 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         };
     }
 
+    /**
+     * Extracts the raw value from an operand, resolving literals or nested expressions.
+     *
+     * @param operand the operand to evaluate
+     * @param joinType the join type to use for nested expressions
+     * @return the extracted value or resolved expression
+     */
     private Object getValue(final Operand operand,
                             final JoinType joinType) {
         if (operand instanceof LiteralOperand literalOperand) {
@@ -183,6 +271,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
         }
     }
 
+    /**
+     * Maps the custom {@link JoinType} to the JPA Criteria {@link jakarta.persistence.criteria.JoinType}.
+     *
+     * @param joinType the custom join type
+     * @return the JPA join type
+     */
     private jakarta.persistence.criteria.JoinType jpaJoin(final JoinType joinType) {
         return switch (joinType) {
             case LEFT -> jakarta.persistence.criteria.JoinType.LEFT;
