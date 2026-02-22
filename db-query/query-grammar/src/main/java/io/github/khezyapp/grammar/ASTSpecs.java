@@ -6,6 +6,8 @@ import io.github.khezyapp.query.FilterSpecParser;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
+import java.util.Objects;
+
 /**
  * Utility class for parsing and creating {@link QuerySpec} instances from query strings.
  */
@@ -21,6 +23,10 @@ public final class ASTSpecs {
      * @return the parsed query specification root
      */
     public static QuerySpec fromQuery(final String filterQuery) {
+        if (Objects.isNull(filterQuery) ||
+                filterQuery.isBlank()) {
+            return null;
+        }
         final var lexer = new FilterSpecLexer(CharStreams.fromString(filterQuery));
         final var token = new CommonTokenStream(lexer);
         final var parser = new FilterSpecParser(token);

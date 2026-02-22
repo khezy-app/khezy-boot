@@ -9,8 +9,12 @@ repositories {
 
 ext {
     mavenPublishVersion = "0.36.0"
+    springBootVersion = "3.5.11"
+    dependencyManagementVersion = "1.1.7"
 }
 
 dependencies {
     implementation "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:${mavenPublishVersion}"
+    implementation "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    runtimeOnly "io.spring.gradle:dependency-management-plugin:${dependencyManagementVersion}"
 }

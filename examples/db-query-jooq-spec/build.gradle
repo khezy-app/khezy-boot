@@ -1,0 +1,13 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Example of using Jooq Specification'
+
+dependencies {
+    implementation "${group}:query-jooq-spec"
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
+    runtimeOnly 'com.h2database:h2'
+}

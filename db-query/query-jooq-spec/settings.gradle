@@ -2,4 +2,4 @@ pluginManagement {
     includeBuild("../../build-logic")
 }
 
-rootProject.name = "example-db-query-jpa-spec"
+rootProject.name = "query-jooq-spec"

@@ -5,6 +5,8 @@ pluginManagement {
 rootProject.name = "khezy-boot"
 
 includeBuild("db-query/query-grammar")
+includeBuild("db-query/query-jooq-spec")
 includeBuild("db-query/query-jpa-spec")
 
 includeBuild("examples/db-query-jpa-spec")
+includeBuild("examples/db-query-jooq-spec")

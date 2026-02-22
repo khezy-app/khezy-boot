@@ -1,0 +1,17 @@
+plugins {
+    id("khezy.java-library")
+    id("khezy.java-use-mockito")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0-SNAPSHOT"
+
+ext {
+    queryGrammarVersion = "1.0.0-SNAPSHOT"
+    jooqVersion = "3.20.11"
+}
+
+dependencies {
+    api "${group}:query-grammar:${queryGrammarVersion}"
+    implementation "org.jooq:jooq:${jooqVersion}"
+}
