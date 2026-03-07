@@ -1,0 +1,34 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    jjwtVersion = "0.13.0"
+}
+
+dependencies {
+    api "io.github.khezyapp:api-exception:1.0.0"
+
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    api 'io.micrometer:micrometer-tracing-bridge-brave'
+
+    compileOnly 'org.springframework.boot:spring-boot-starter-security'
+    compileOnly "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    testImplementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = 'Khezy Exception Starter'
+        description = """
+        A custom Spring Boot starter designed to simplify global exception handling. \
+        It provides pre-configured, standardized RFC 7807 error responses for common \
+        Spring Boot projects. This library is shared as part of the KHEZY initiative \
+        to help developers implement consistent API error structures and diagnostic \
+        logging with minimal configuration."""
+    }
+}

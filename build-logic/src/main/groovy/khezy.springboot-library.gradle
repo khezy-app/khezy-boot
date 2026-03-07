@@ -2,7 +2,7 @@ plugins {
     id("khezy.base-java-library")
     id("khezy.maven-publish")
     id("khezy.code-quality")
-    id("org.springframework.boot")
+    id("org.springframework.boot") apply(false)
     id("io.spring.dependency-management")
 }
 
@@ -13,9 +13,10 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -24,6 +25,14 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.named("bootJar") {
+    enabled = false
+}
+
+tasks.named("jar") {
+    enabled = true
+    archiveClassifier.set("")
+}
 
 // Ensure this runs after the Vanniktech plugin has initialized
 afterEvaluate {
