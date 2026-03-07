@@ -1,0 +1,29 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    jjwtVersion = "0.13.0"
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.springframework.boot:spring-boot-starter-security'
+    compileOnly "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = 'Khezy Rest API Exception Library'
+        description = """
+        A lightweight, production-ready exception handling starter for Spring Boot 3+ applications. \
+        This library provides a standardized way to handle global exceptions by extending the RFC 7807 \
+        (Problem Details for HTTP APIs) specification via Spring's ProblemDetail class."""
+    }
+}

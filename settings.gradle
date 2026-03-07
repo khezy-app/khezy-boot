@@ -8,5 +8,9 @@ includeBuild("db-query/query-grammar")
 includeBuild("db-query/query-jooq-spec")
 includeBuild("db-query/query-jpa-spec")
 
+includeBuild("rest-api/api-exception")
+
+includeBuild("auto-configurations/rest-api/api-exception-spring-boot-starter")
+
 includeBuild("examples/db-query-jpa-spec")
 includeBuild("examples/db-query-jooq-spec")
