@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -78,7 +77,7 @@ public class JpaSpecificationVisitorTest {
 
         // Setup for the AND result
         // Note: use anyList() or argumentCaptor to match the list of predicates
-        doReturn(expectedAnd).when(cb).and(Collections.singletonList(any()));
+        doReturn(expectedAnd).when(cb).and(any(Predicate[].class));
 
         final var andSpec = new LogicalAndSpec(List.of(spec1, spec2));
         final var result = andSpec.accept(visitor);
@@ -102,7 +101,7 @@ public class JpaSpecificationVisitorTest {
         final var result = andSpec.accept(visitor);
 
         assertEquals(pred, result, "Should return child predicate directly when only one child exists");
-        verify(cb, never()).and(anyList());
+        verify(cb, never()).and(any(Predicate[].class));
     }
 
     @Test

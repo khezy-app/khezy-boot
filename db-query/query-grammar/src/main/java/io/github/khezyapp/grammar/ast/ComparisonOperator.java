@@ -20,6 +20,10 @@ public enum ComparisonOperator {
     IN("IN"),
     /** Range inclusion operator. */
     BETWEEN("BETWEEN"),
+    /** Like operator. */
+    LIKE("LIKE"),
+    /** ILike operator. */
+    ILIKE("ILIKE"),
     /** Null check operator. */
     IS_NULL("IS NULL"),
     /** Not null check operator. */

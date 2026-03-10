@@ -33,6 +33,10 @@ public class FilterSpecification<T> implements Specification<T> {
                 ASTSpecs.fromQuery(filterQuery) : null;
     }
 
+    public FilterSpecification(final QuerySpec querySpec) {
+        this.astRoot = querySpec;
+    }
+
     /**
      * Translates the AST root into a JPA Predicate.
      *

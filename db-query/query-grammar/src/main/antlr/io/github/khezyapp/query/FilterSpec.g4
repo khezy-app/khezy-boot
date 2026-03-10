@@ -55,7 +55,7 @@ havingClause
     ;
 
 joinType    : LEFT | INNER | RIGHT ;
-operator    : '=' | '!=' | '<' | '<=' | '>' | '>=' ;
+operator    : '=' | '!=' | '<' | '<=' | '>' | '>=' | LIKE | ILIKE;
 
 value
     : NUMBER
@@ -103,6 +103,9 @@ MAX         : [Mm][Aa][Xx] ;
 LEFT        : [Ll][Ee][Ff][Tt] ;
 INNER       : [Ii][Nn][Nn][Ee][Rr] ;
 RIGHT       : [Rr][Ii][Gg][Hh][Tt] ;
+
+LIKE        : [Ll][Ii][Kk][Ee] ;
+ILIKE       : [Ii][Ll][Ii][Kk][Ee] ;
 
 IDENTIFIER  : [a-zA-Z_][a-zA-Z_0-9]* ;
 NUMBER      : [0-9]+ ('.' [0-9]+)? ;
