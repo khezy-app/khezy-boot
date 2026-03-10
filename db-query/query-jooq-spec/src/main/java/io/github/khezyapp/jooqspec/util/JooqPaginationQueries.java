@@ -1,5 +1,6 @@
 package io.github.khezyapp.jooqspec.util;
 
+import io.github.khezyapp.grammar.ast.QuerySpec;
 import io.github.khezyapp.jooqspec.JooqPageRequest;
 import io.github.khezyapp.jooqspec.JooqPaginationQuery;
 
@@ -27,6 +28,24 @@ public final class JooqPaginationQueries {
     public static JooqPaginationQuery of(final String rawQuery,
                                          final JooqPageRequest pageable) {
         final var specification = JooqSpecifications.of(rawQuery);
+        return new JooqPaginationQuery(specification, pageable);
+    }
+
+    /**
+     * Static factory method that creates a {@link JooqPaginationQuery} by combining
+     * a {@link QuerySpec} and a {@link JooqPageRequest}.
+     * <p>
+     * This method internally transforms the {@code querySpec} into a {@link JooqSpecifications}
+     * instance before initializing the pagination query object.
+     * </p>
+     *
+     * @param querySpec the specification containing filtering and search criteria
+     * @param pageable  the pagination and sorting parameters
+     * @return a new instance of {@link JooqPaginationQuery} configured with the derived specification
+     */
+    public static JooqPaginationQuery of(final QuerySpec querySpec,
+                                         final JooqPageRequest pageable) {
+        final var specification = JooqSpecifications.of(querySpec);
         return new JooqPaginationQuery(specification, pageable);
     }
 }

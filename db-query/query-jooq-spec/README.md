@@ -1,53 +1,106 @@
-# jOOQ Dynamic Filtering & Pagination Guide
+# query-jooq-spec
 
-This guide explains how to use the Specification AST library to implement dynamic search, filtering, 
-and pagination using jOOQ.
-
----
-
-## 🏗️ Architecture Overview
-
-The library acts as a bridge between a **human-readable query string** and **jOOQ's type-safe DSL**.
-
-
-
-1.  **Parsing**: Your query string (e.g., `book.price > 20`) is converted into an Abstract Syntax Tree (AST).
-2.  **Transformation**: The `FilterJooqVisitor` visits the AST and generates jOOQ `Condition` and `Field` objects.
-3.  **Execution**: The generated components are plugged directly into your jOOQ `select` statements.
+A lightweight Specification AST (Abstract Syntax Tree) library for **jOOQ**. This project acts as a bridge between 
+dynamic user input—either through a human-readable query string or a type-safe programmatic builder—and jOOQ's powerful DSL.
 
 ---
 
-## 🚀 Getting Started
+## Introduction
 
-### 1. Define your Controller
-The controller captures the user's search string (`q`) and pagination preferences.
+`query-jooq-spec` is designed to simplify the implementation of dynamic filtering, searching, and pagination 
+in Spring Boot applications using jOOQ. It allows developers to transform complex query logic into jOOQ-compatible 
+`Condition`, `Group Field`, and `Having` clauses without writing repetitive boilerplate code.
+
+---
+
+## ⚠️ Limitations & Scope
+
+This project follows the **Specification Pattern**.
+* **Focus**: Its primary goal is to generate the `WHERE`, `GROUP BY`, and `HAVING` components of a query.
+* **Base Query Management**: It **does not** automatically handle table joins or the base `SELECT` structure. 
+You are responsible for ensuring all tables referenced in your specifications (e.g., `book.title`) are manually 
+joined in your jOOQ statement.
+* **General Use-case**: This library is optimized for standard CRUD and search operations. 
+It is not intended for highly advanced SQL features or vendor-specific complex subqueries.
+
+---
+
+## Installation
+
+Add the library to your project using the following coordinates:
+
+### Maven
+```xml
+<dependency>
+    <groupId>io.github.khezyapp</groupId>
+    <artifactId>query-jooq-spec</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+### Gradle
+```groovy
+dependencies {
+    implementation 'io.github.khezyapp:query-jooq-spec:1.0.0'
+}
+```
+
+---
+
+## Usage
+
+You can generate specifications in two ways: using a Raw Query String for flexible searching, or 
+using the Type-safe Builder for structured requests.
+
+### 1. Using Raw Query Syntax
+
+Perfect for "Search" bars where users or frontend clients pass a string directly.
+
+* **Syntax**: `book.price > 100 AND book.id = 10`
 
 ```java
-@GetMapping("/books")
-public ResponseEntity<Page<Book>> getAll(
-        @RequestParam("q") String q, // Example: "book.title = 'Java' AND book.price < 50"
-        @RequestParam(defaultValue = "10") int pageSize,
-        @RequestParam(defaultValue = "0") int pageNumber
-) {
-    // 1. Define sorting and paging
+@GetMapping
+public ResponseEntity<Page<Book>> getAll(@RequestParam("q") String q) {
     var pageable = new JooqPageRequest.Builder()
-            .pageSize(pageSize)
-            .pageNumber(pageNumber)
-            .sortFields(List.of("book.id"))
-            .sortDirections(List.of("ASC"))
+            .pageSize(10)
+            .pageNumber(0)
             .build();
 
-    // 2. Build the unified Pagination Query
+    // Automatically parses the string 'q' into an AST and then to jOOQ specs
     var jooqPagination = JooqPaginationQueries.of(q, pageable);
-
-    // 3. Execute via Service
+    
     return ResponseEntity.ok(bookService.getBook(jooqPagination));
 }
 ```
 
-### 2. Apply the Specification in your Service
+### 2. Using the AST Builder
 
-In your service layer, extract the specification() to apply filters, groups, and having clauses.
+Ideal when you have specific request parameters (like an ID, Category, or Date Range) and want to control 
+the behavior programmatically.
+
+```java
+@GetMapping("/builder")
+public ResponseEntity<Page<Book>> getWithBuilder(
+        @RequestParam(required = false) Long id,
+        @RequestParam(required = false) String title) {
+    
+    var querySpec = ASTSpecs.builder()
+            .where(
+                ASTSpecConditions.and(
+                    ASTSpecConditions.ilike("book.title", title),
+                    ASTSpecConditions.eq("book.id", id)
+                )
+            )
+            .build();
+
+    var jooqPagination = JooqPaginationQueries.of(querySpec, pageable);
+    return ResponseEntity.ok(bookService.getBook(jooqPagination));
+}
+```
+
+## Service Layer Integration
+
+In your service, you simply apply the generated specification to your jOOQ DSL context.
 
 ```java
 public Page<Book> getBook(JooqPaginationQuery query) {
@@ -55,9 +108,10 @@ public Page<Book> getBook(JooqPaginationQuery query) {
 
     var select = dsl.select(...)
             .from(BOOK)
-            .where(spec.where()); // <--- Dynamic Filter applied here
+            .leftJoin(AUTHOR).on(BOOK.AUTHOR_ID.eq(AUTHOR.ID)) // Manage your joins here!
+            .where(spec.where());
 
-    // Apply Grouping and Having if the query contains aggregates
+    // Apply Grouping if the query requires it
     if (!spec.groupBy().isEmpty()) {
         select.addGroupBy(spec.groupBy());
         select.addHaving(spec.having());
@@ -71,34 +125,15 @@ public Page<Book> getBook(JooqPaginationQuery query) {
 }
 ```
 
-## 📝 Query Syntax Cheat Sheet
+---
 
-| Feature	   | Query String Example                   |
-|------------|----------------------------------------|
-| Comparison | 	book.price > 50                       |
-| Strings    | 	author.name = 'J.K. Rowling'          |
-| In-List 	  | book.id IN (1, 2, 3)                   |
-| Logical    | 	price < 100 AND title = 'Spring'      |
-| Aggregates | 	COUNT(book.id) > 5 GROUP BY author.id |
-| Nulls	     | author_id IS NOT NULL                  |
+## Query Syntax Cheat Sheet
 
-## 💡 Best Practices for Beginners
-### 🛡️ Qualified Names
-
-Always use Qualified Names (Table + Field) in your queries and your jOOQ definitions. 
-This prevents "ambiguous column" errors when joining multiple tables.
-
-- Bad: id
-- Good: book.id
-
-### 🖇️ Join Awareness
-
-The library generates conditions, but it does not automatically join tables in your SQL. You must ensure that every 
-table referenced in your query string (e.g., author.name) is manually joined in your Java code:
-
-```java
-dsl.select(...)
-   .from(BOOK)
-   .leftJoin(AUTHOR).on(BOOK_AUTHOR_ID.eq(AUTHOR_ID)) // Ensure AUTHOR is joined!
-   .where(spec.where())
-```
+| Feature	         | Query String Example                   |
+|------------------|----------------------------------------|
+| Comparison       | 	book.price > 50                       |
+| Strings	         | author.name = 'J.K. Rowling'           |
+| Case-Insensitive | 	book.title ILIKE '%java%'             |
+| In-List          | 	book.id IN (1, 2, 3)                  |
+| Logical	         | price < 100 AND title = 'Spring'       |
+| Aggregates       | 	COUNT(book.id) > 5 GROUP BY author.id |

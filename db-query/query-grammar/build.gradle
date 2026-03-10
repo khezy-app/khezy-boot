@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.github.khezyapp"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 
 ext {
     antlrVersion = "4.13.1"
@@ -21,4 +21,14 @@ generateGrammarSource {
 
 tasks.named("sourcesJar") {
     dependsOn(tasks.generateGrammarSource)
+}
+
+mavenPublishing {
+    pom {
+        name = "Query Grammar Specification"
+        description = """
+        A lightweight, library designed to decouple business logic from common infrastructure tasks. 
+        This library provides a structured Abstract Syntax Tree (AST) for building dynamic queries, filtering, 
+        and specifications using a human-readable syntax powered by ANTLR."""
+    }
 }

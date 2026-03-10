@@ -1,19 +1,35 @@
 plugins {
     id("khezy.java-library")
     id("khezy.java-use-mockito")
+    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = "io.github.khezyapp"
 version = "1.0.0-SNAPSHOT"
 
 ext {
-    queryGrammarVersion = "1.0.0-SNAPSHOT"
-    springDataJpaVersion = "4.0.3"
-    jakartaPersistenceApiVersion = "3.2.0"
+    queryGrammarVersion = "1.0.0"
+    springBootVersion = "3.5.11"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
+    }
 }
 
 dependencies {
     api "${group}:query-grammar:${queryGrammarVersion}"
-    implementation "org.springframework.data:spring-data-jpa:${springDataJpaVersion}"
-    implementation "jakarta.persistence:jakarta.persistence-api:${jakartaPersistenceApiVersion}"
+    implementation "org.springframework.data:spring-data-jpa"
+    implementation "jakarta.persistence:jakarta.persistence-api"
+}
+
+mavenPublishing {
+    pom {
+        name = "Query Jooq Spec"
+        description = """
+        A high-level abstraction for **Spring Data JPA** that bridges the gap between dynamic user-defined filters and 
+        the **JPA Criteria API**. This library allows you to transform complex query strings or programmatic builders 
+        into type-safe `Specification` objects automatically."""
+    }
 }

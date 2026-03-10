@@ -1,5 +1,6 @@
 package io.github.khezyapp.jpaspec;
 
+import io.github.khezyapp.grammar.ast.QuerySpec;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +27,12 @@ public class JpaPaginationQuery<T> {
     public JpaPaginationQuery(final String filterQuery,
                               final Pageable pageable) {
         this.spec = new FilterSpecification<>(filterQuery);
+        this.pageable = pageable;
+    }
+
+    public JpaPaginationQuery(final QuerySpec querySpec,
+                              final Pageable pageable) {
+        this.spec = new FilterSpecification<>(querySpec);
         this.pageable = pageable;
     }
 

@@ -32,9 +32,9 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
     /**
      * Constructs a visitor with the necessary JPA Criteria context.
      *
-     * @param root the JPA root from which paths and joins originate
+     * @param root  the JPA root from which paths and joins originate
      * @param query the criteria query being constructed
-     * @param cb the criteria builder used to create predicates and expressions
+     * @param cb    the criteria builder used to create predicates and expressions
      */
     public JpaSpecificationVisitor(final Root<T> root,
                                    final CriteriaQuery<?> query,
@@ -96,7 +96,7 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
                 .stream()
                 .map(child -> child.accept(this))
                 .toList();
-        return cb.or(predicates);
+        return cb.or(predicates.toArray(new Predicate[0]));
     }
 
     /**
@@ -118,7 +118,7 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
                 .stream()
                 .map(child -> child.accept(this))
                 .toList();
-        return cb.and(predicates);
+        return cb.and(predicates.toArray(new Predicate[0]));
     }
 
     /**
@@ -140,6 +140,8 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
             case LTE -> cb.lessThanOrEqualTo(expression.as(Comparable.class), (Comparable<Object>) value);
             case GT -> cb.greaterThan(expression.as(Comparable.class), (Comparable<Object>) value);
             case GTE -> cb.greaterThanOrEqualTo(expression.as(Comparable.class), (Comparable<Object>) value);
+            case LIKE -> cb.like(expression.as(String.class), String.valueOf(value));
+            case ILIKE -> cb.like(cb.lower(expression.as(String.class)), String.valueOf(value).toLowerCase());
             default -> throw new UnsupportedOperationException("Operator '%s' not supported in binary comparison"
                     .formatted(operator));
         };
@@ -195,7 +197,7 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
     /**
      * Resolves an {@link Operand} into a JPA {@link Expression}.
      *
-     * @param operand the operand to resolve
+     * @param operand  the operand to resolve
      * @param joinType the join type to use if joins are required
      * @return the JPA expression
      */
@@ -212,7 +214,7 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
      * Resolves a {@link PathOperand} into a JPA {@link Path}, automatically creating or
      * reusing joins for nested paths (e.g., "user.address.city").
      *
-     * @param path the path operand containing segments
+     * @param path     the path operand containing segments
      * @param joinType the join type to apply when creating new joins
      * @return the JPA path
      */
@@ -240,12 +242,12 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
     /**
      * Translates an {@link AggregateOperand} into a JPA aggregate function expression.
      *
-     * @param agg the aggregate operand
+     * @param agg      the aggregate operand
      * @param joinType the join type for the underlying path
      * @return the aggregate expression
      */
     private Expression<?> getAggregate(final AggregateOperand agg,
-                                      final JoinType joinType) {
+                                       final JoinType joinType) {
         return switch (agg.function()) {
             case COUNT -> cb.count(getPath(agg.path(), joinType));
             case SUM -> cb.sum((Expression<? extends Number>) getPath(agg.path(), joinType));
@@ -258,7 +260,7 @@ public class JpaSpecificationVisitor<T> implements SpecificationVisitor<Predicat
     /**
      * Extracts the raw value from an operand, resolving literals or nested expressions.
      *
-     * @param operand the operand to evaluate
+     * @param operand  the operand to evaluate
      * @param joinType the join type to use for nested expressions
      * @return the extracted value or resolved expression
      */

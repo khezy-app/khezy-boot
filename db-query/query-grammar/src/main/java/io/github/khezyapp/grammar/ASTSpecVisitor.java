@@ -143,7 +143,7 @@ public class ASTSpecVisitor extends FilterSpecBaseVisitor<ASTSpec> {
     }
 
     /**
-     * Visits a simple binary comparison (e.g., =, !=, <).
+     * Visits a simple binary comparison {@code (e.g., =, !=, <)}.
      *
      * @param ctx the simple comparison context
      * @return a partial binary comparison specification

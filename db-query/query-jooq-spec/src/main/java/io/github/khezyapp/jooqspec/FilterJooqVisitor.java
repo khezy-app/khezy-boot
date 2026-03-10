@@ -138,6 +138,8 @@ public class FilterJooqVisitor implements SpecificationVisitor<JooqCondition> {
             case LTE -> left.lessOrEqual((Field) right);
             case GT -> left.greaterThan((Field) right);
             case GTE -> left.greaterOrEqual((Field) right);
+            case LIKE -> left.like((Field) right);
+            case ILIKE -> left.likeIgnoreCase((Field) right);
             default -> throw new IllegalArgumentException("Unknown binary comparison operator: " + op);
         };
     }

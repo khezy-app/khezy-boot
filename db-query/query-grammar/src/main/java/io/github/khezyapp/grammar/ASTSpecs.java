@@ -1,6 +1,9 @@
 package io.github.khezyapp.grammar;
 
+import io.github.khezyapp.grammar.ast.ASTSpecErrorListener;
 import io.github.khezyapp.grammar.ast.QuerySpec;
+import io.github.khezyapp.grammar.ast.builder.ASTQuerySpecBuilder;
+import io.github.khezyapp.grammar.ast.builder.QuerySpecBuilderStep;
 import io.github.khezyapp.query.FilterSpecLexer;
 import io.github.khezyapp.query.FilterSpecParser;
 import org.antlr.v4.runtime.CharStreams;
@@ -27,12 +30,22 @@ public final class ASTSpecs {
                 filterQuery.isBlank()) {
             return null;
         }
+
         final var lexer = new FilterSpecLexer(CharStreams.fromString(filterQuery));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(ASTSpecErrorListener.INSTANCE);
+
         final var token = new CommonTokenStream(lexer);
         final var parser = new FilterSpecParser(token);
+        parser.removeErrorListeners();
+        parser.addErrorListener(ASTSpecErrorListener.INSTANCE);
+
         final var queryRoot = parser.filterSpec();
         final var queryVisitor = new ASTSpecVisitor();
         return (QuerySpec) queryVisitor.visit(queryRoot);
     }
 
+    public static QuerySpecBuilderStep.WhereStep builder() {
+        return ASTQuerySpecBuilder.builder();
+    }
 }

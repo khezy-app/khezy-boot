@@ -1,6 +1,7 @@
 package io.github.khezyapp.jooqspec.util;
 
 import io.github.khezyapp.grammar.ASTSpecs;
+import io.github.khezyapp.grammar.ast.QuerySpec;
 import io.github.khezyapp.jooqspec.FilterJooqVisitor;
 import io.github.khezyapp.jooqspec.JooqSpecification;
 import org.jooq.impl.DSL;
@@ -32,6 +33,10 @@ public final class JooqSpecifications {
      */
     public static JooqSpecification of(final String rawQuery) {
         final var querySpec = ASTSpecs.fromQuery(rawQuery);
+        return of(querySpec);
+    }
+
+    public static JooqSpecification of(final QuerySpec querySpec) {
         if (Objects.isNull(querySpec)) {
             return new JooqSpecification.Builder()
                     .where(DSL.noCondition())
