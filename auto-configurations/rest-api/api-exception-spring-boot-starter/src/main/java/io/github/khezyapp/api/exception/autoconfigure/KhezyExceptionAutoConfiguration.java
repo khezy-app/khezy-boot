@@ -22,8 +22,12 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.beanvalidation.MessageSourceResourceBundleLocator;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Spring Boot auto-configuration for the Khezy Exception Handling library.
@@ -52,9 +56,17 @@ public class KhezyExceptionAutoConfiguration {
     @ConditionalOnMissingBean(name = "khezyI18nException")
     public MessageSource khezyMessageSource(@Value("${spring.messages.basename:messages}") final String userBasenames) {
         final var messageSource = new ReloadableResourceBundleMessageSource();
+        final var basenames = Stream.of(userBasenames.split(","))
+                .map(String::strip)
+                .map(path -> path.startsWith(":") ? path : "classpath:" + path)
+                .toList()
+                .toArray(new String[0]);
 
-        final var combinedBaseNames = userBasenames + "," + "classpath:i18n/errors/KhezyValidationMessages";
-        messageSource.setBasenames(combinedBaseNames.split(","));
+        final var finalPaths = new String[basenames.length + 1];
+        System.arraycopy(basenames, 0, finalPaths, 0, basenames.length);
+        finalPaths[finalPaths.length - 1] = "classpath:i18n/errors/KhezyValidationMessages";
+
+        messageSource.setBasenames(finalPaths);
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setUseCodeAsDefaultMessage(true);
         messageSource.setFallbackToSystemLocale(true);
