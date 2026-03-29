@@ -5,6 +5,7 @@ import io.github.khezyapp.api.audit.aop.AuditLogAttributeSource;
 import io.github.khezyapp.api.audit.aop.AuditLogMethodInterceptor;
 import io.github.khezyapp.api.audit.aop.AuditLogPointcut;
 import io.github.khezyapp.api.audit.api.AuditLogService;
+import io.github.khezyapp.api.audit.api.AuditUserProvider;
 import io.github.khezyapp.api.audit.api.SensitiveMasker;
 import io.github.khezyapp.api.audit.extractor.AbstractBodyExtractor;
 import io.github.khezyapp.api.audit.extractor.CompositeBodyExtractor;
@@ -83,12 +84,14 @@ public class KhezyAuditLogAutoConfiguration {
             final AuditLogAttributeSource attributeSource,
             final AuditExpressionEvaluator auditExpressionEvaluator,
             final CompositeBodyExtractor compositeBodyExtractor,
-            final AuditLogService auditLogService) {
+            final AuditLogService auditLogService,
+            final ObjectProvider<AuditUserProvider> auditUserProvider) {
         return new AuditLogMethodInterceptor(
                 attributeSource,
                 auditExpressionEvaluator,
                 compositeBodyExtractor,
-                auditLogService
+                auditLogService,
+                auditUserProvider
         );
     }
 

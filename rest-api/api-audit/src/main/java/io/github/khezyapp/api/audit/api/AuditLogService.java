@@ -27,7 +27,7 @@ public interface AuditLogService {
      *
      * @param auditLogRecord the structured record containing request and execution metadata
      */
-    void onRequest(AuditLogRecord<?> auditLogRecord);
+    void onRequest(AuditLogRecord auditLogRecord);
 
     /**
      * Processes fine-grained entity state changes captured during the data access layer lifecycle.

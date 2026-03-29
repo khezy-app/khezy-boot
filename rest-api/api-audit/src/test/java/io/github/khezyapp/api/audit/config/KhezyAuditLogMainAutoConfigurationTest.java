@@ -129,7 +129,7 @@ class KhezyAuditLogMainAutoConfigurationTest {
     // Dummy classes for testing overrides
     static class CustomAuditLogService implements AuditLogService {
         @Override
-        public void onRequest(final AuditLogRecord<?> auditLogRecord) {
+        public void onRequest(final AuditLogRecord auditLogRecord) {
         }
 
         @Override

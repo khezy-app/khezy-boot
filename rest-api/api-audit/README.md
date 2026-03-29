@@ -146,6 +146,56 @@ public class User {
 }
 ```
 
+### 4. User Context Provider
+
+To associate audit logs with a specific user, implement the `AuditUserProvider` interface. The library detects 
+your implementation to populate the user field in the `AuditLogRecord` using your custom `AuditUser` details.
+
+#### 4.1. Implementation Example (Spring Security)
+
+If your application uses Spring Security, you can bridge the SecurityContext to the auditing system by 
+implementing both the provider and the user representation:
+
+```java
+@Component
+public class SpringSecurityAuditUserProvider implements AuditUserProvider {
+
+    @Override
+    public AuditUser<Long> getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return new SystemAuditUser();
+        }
+
+        // Assuming your Principal is a custom UserDetails object
+        CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
+
+        return new AuthenticatedAuditUser(details.getId(), details.getUsername());
+    }
+
+    // Example internal implementation of AuditUser
+    private record AuthenticatedAuditUser(Long id, String username) implements AuditUser<Long> {
+        @Override public Long getId() { return id; }
+        @Override public String getUsername() { return username; }
+    }
+
+    private record SystemAuditUser() implements AuditUser<Long> {
+        @Override public Long getId() { return 0L; }
+        @Override public String getUsername() { return "SYSTEM"; }
+    }
+}
+```
+
+#### 4.2. How it Works
+
+* **Contract-Based Identity**: The `AuditUser` interface ensures that regardless of your underlying security 
+provider (OIDC, LDAP, or Database), the audit log always captures a consistent id and username.
+* **Automatic Detection**: The library utilizes `ObjectProvider<AuditUserProvider>` to safely inject your bean. 
+If no provider is found on the classpath, the user field in the audit record defaults to null.
+* **Type Safety**: By using AuditUser<? extends Serializable>, the library supports any ID type (Long, UUID, String) 
+while maintaining strict serializability for log storage or message brokers.
+
 ---
 
 ## Custom Configuration

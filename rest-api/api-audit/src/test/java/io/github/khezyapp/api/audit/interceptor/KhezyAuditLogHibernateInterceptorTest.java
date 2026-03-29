@@ -274,7 +274,7 @@ class KhezyAuditLogHibernateInterceptorTest {
         private final List<AuditEntityChange> auditEntityChanges = new ArrayList<>();
 
         @Override
-        public void onRequest(final AuditLogRecord<?> auditLogRecord) {
+        public void onRequest(final AuditLogRecord auditLogRecord) {
         }
 
         @Override

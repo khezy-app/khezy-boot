@@ -31,7 +31,7 @@ public class NoopAuditLogService implements AuditLogService {
      * @param auditLogRecord the structured record containing request and execution metadata
      */
     @Override
-    public void onRequest(final AuditLogRecord<?> auditLogRecord) {
+    public void onRequest(final AuditLogRecord auditLogRecord) {
         log.debug("AuditLogRecord: {}", auditLogRecord);
     }
 

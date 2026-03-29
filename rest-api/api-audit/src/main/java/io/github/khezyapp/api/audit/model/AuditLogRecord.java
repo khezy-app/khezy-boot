@@ -13,7 +13,6 @@ import java.time.Instant;
  * <p>The record captures the full lifecycle of an intercepted method, including
  * distributed tracing identifiers, resource metadata, and execution duration.</p>
  *
- * @param <T> the type of the user identifier, must be {@link java.io.Serializable}
  */
 @Getter
 @Setter
@@ -22,7 +21,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AuditLogRecord<T extends Serializable> {
+public class AuditLogRecord {
     /** The unique identifier for the distributed trace. */
     private String traceId;
 
@@ -45,7 +44,7 @@ public class AuditLogRecord<T extends Serializable> {
     private Long duration;
 
     /** Encapsulates the identity of the actor who initiated the request. */
-    private AuditUser<T> user;
+    private AuditUser<? extends Serializable> user;
 
     /** A flexible container for additional request/response context. */
     private AuditMetadata metadata;

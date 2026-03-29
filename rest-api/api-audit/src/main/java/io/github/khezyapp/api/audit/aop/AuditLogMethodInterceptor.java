@@ -4,6 +4,7 @@ import io.github.khezyapp.api.audit.AuditExpressionEvaluator;
 import io.github.khezyapp.api.audit.ClientIpUtil;
 import io.github.khezyapp.api.audit.annotation.AuditLog;
 import io.github.khezyapp.api.audit.api.AuditLogService;
+import io.github.khezyapp.api.audit.api.AuditUserProvider;
 import io.github.khezyapp.api.audit.extractor.CompositeBodyExtractor;
 import io.github.khezyapp.api.audit.model.AuditLogRecord;
 import io.github.khezyapp.api.audit.model.AuditMetadata;
@@ -14,6 +15,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.MDC;
 import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -40,6 +42,7 @@ public class AuditLogMethodInterceptor implements MethodInterceptor {
     private final AuditExpressionEvaluator auditExpressionEvaluator;
     private final CompositeBodyExtractor compositeBodyExtractor;
     private final AuditLogService auditLogService;
+    private final ObjectProvider<AuditUserProvider> auditUserProvider;
 
     /**
      * Intercepts the method invocation to determine if audit logging is required.
@@ -72,7 +75,7 @@ public class AuditLogMethodInterceptor implements MethodInterceptor {
      * </p>
      *
      * @param invocation the method invocation
-     * @param auditLog the resolved audit configuration
+     * @param auditLog   the resolved audit configuration
      * @return the result of the invocation
      * @throws Throwable rethrows any exception encountered during execution
      */
@@ -107,21 +110,26 @@ public class AuditLogMethodInterceptor implements MethodInterceptor {
      * </p>
      *
      * @param invocation the method invocation
-     * @param result the return value of the method (if any)
-     * @param auditLog the annotation configuration
-     * @param status the final status of the execution
-     * @param error the exception thrown (if any)
+     * @param result     the return value of the method (if any)
+     * @param auditLog   the annotation configuration
+     * @param status     the final status of the execution
+     * @param error      the exception thrown (if any)
      * @return a populated audit log record
      */
-    private AuditLogRecord<?> buildEntry(final MethodInvocation invocation,
-                                         final Object result,
-                                         final AuditLog auditLog,
-                                         final AuditStatus status,
-                                         final Throwable error,
-                                         final StopWatch stopWatch) {
+    private AuditLogRecord buildEntry(final MethodInvocation invocation,
+                                      final Object result,
+                                      final AuditLog auditLog,
+                                      final AuditStatus status,
+                                      final Throwable error,
+                                      final StopWatch stopWatch) {
         final var entityId = auditExpressionEvaluator.execute(auditLog.entityId(), invocation, result);
         final var entityClass = auditLog.entityClass() != void.class ? auditLog.entityClass() : null;
+        final var currentUser = Optional.ofNullable(auditUserProvider)
+                .map(ObjectProvider::getIfUnique)
+                .map(AuditUserProvider::getCurrentUser)
+                .orElse(null);
         return AuditLogRecord.builder()
+                .user(currentUser)
                 .traceId(MDC.get("traceId"))
                 .spanId(MDC.get("spanId"))
                 .action(auditLog.action())
