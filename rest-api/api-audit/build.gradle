@@ -1,0 +1,37 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    javersVersion = "7.11.0"
+}
+
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation "org.javers:javers-core:${javersVersion}"
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+}
+
+mavenPublishing {
+    pom {
+        name = 'Khezy Rest API Audit Library'
+        description = """
+        `api-audit` is a lightweight, plug-and-play Spring Boot library designed to simplify the implementation of comprehensive 
+        audit trails. It provides a dual-layer auditing strategy:
+
+        * **Request Auditing**: Captures high-level API interactions, metadata, and request bodies.
+        * **Entity-Level Auditing**: Captures fine-grained data mutations (Create, Update, Delete) at the database level.
+
+        By integrating seamlessly with Spring **AOP** and **Hibernate**, `api-audit` allows developers to track 
+        "**who did what and when**" without cluttering business logic."""
+    }
+}
