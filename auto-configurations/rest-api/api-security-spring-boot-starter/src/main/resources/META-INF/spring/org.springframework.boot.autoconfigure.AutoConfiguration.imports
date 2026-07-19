@@ -1,0 +1,2 @@
+io.github.khezyapp.api.security.autoconfigure.KhezySecurityAutoConfiguration
+io.github.khezyapp.api.security.autoconfigure.KhezyRowLevelSecurityAutoConfiguration

@@ -1,0 +1,37 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+repositories {
+    maven { url "https://build.shibboleth.net/nexus/content/repositories/releases/" }
+}
+
+ext {
+    apiSecurityVersion = "1.0.0"
+}
+
+dependencies {
+    api "io.github.khezyapp:api-security:${apiSecurityVersion}"
+    api "org.springframework.boot:spring-boot-starter-security"
+
+    compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    testRuntimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    testImplementation 'org.springframework.security:spring-security-cas'
+    testImplementation 'org.springframework.security:spring-security-saml2-service-provider'
+}
+
+mavenPublishing {
+    pom {
+        name = 'Khezy Rest API Security Starter'
+        description = """
+        """
+    }
+}
