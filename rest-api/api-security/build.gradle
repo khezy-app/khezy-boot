@@ -1,0 +1,63 @@
+plugins {
+    id("khezy.springboot-library")
+    id("khezy.java-use-mockito")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+repositories {
+    maven { url "https://build.shibboleth.net/nexus/content/repositories/releases/" }
+}
+
+ext {
+    jjwtVersion = "0.13.0"
+}
+
+dependencies {
+    // Core security — exposed in public API: Authentication, GrantedAuthority,
+    // PreAuthorize, SecurityExpressionRoot, AccessDeniedHandler, etc.
+    api 'org.springframework.boot:spring-boot-starter-security'
+
+    // Internal: AOP for RowLevelSecurity interceptor + SpEL expression parsing
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    // Optional authentication types — consumers using these features already
+    // have the dependency on their classpath. The auto-configuration in the
+    // starter registers these beans conditionally (@ConditionalOnClass).
+    compileOnly 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
+    compileOnly 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    compileOnly 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    compileOnly 'org.springframework.security:spring-security-cas'
+    compileOnly 'org.springframework.security:spring-security-saml2-service-provider'
+
+    // JWT parsing with jjwt — decoded token structure exposed in public API
+    api "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
+    // Optional: JPA/Hibernate for Row-Level Security (gated by @ConditionalOnClass)
+    compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // Test: servlet + jackson for expression root and access-denied handler tests
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Test: optional auth types needed by builder/factory tests
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    testImplementation 'org.springframework.security:spring-security-cas'
+    testImplementation 'org.springframework.security:spring-security-saml2-service-provider'
+}
+
+mavenPublishing {
+    pom {
+        name = 'Khezy Rest API Security Library'
+        description = "High-level Spring Security abstractions for developers. " +
+                "Simplifies authorization rules, authentication token building, " +
+                "multi-factor authorization, row-level security, and encrypted " +
+                "OAuth2 token persistence through discoverable interfaces."
+    }
+}

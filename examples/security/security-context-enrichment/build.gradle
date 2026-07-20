@@ -1,0 +1,13 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Custom context enrichment and authorization rules with the KHEZY starter'
+
+dependencies {
+    implementation "${group}:api-security-spring-boot-starter"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+}
