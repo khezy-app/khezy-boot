@@ -1,6 +1,7 @@
 # Khezy Rest API Security Starter
 
-Spring Boot auto-configuration for the [api-security](../../rest-api/api-security) library. Drop it in and everything wires automatically.
+Spring Boot auto-configuration for the [api-security](../../rest-api/api-security)
+library. Drop it in and everything wires automatically.
 
 ## Quick Start
 
@@ -10,37 +11,244 @@ dependencies {
 }
 ```
 
-That's it. The starter scans your context for `AuthorizationRule`, `SecurityContextEnricher`, and `AuthenticationBuilderFactory` beans, then registers the infrastructure behind them.
+Then provide a `UserDetailsService` bean (required for JWT authentication) and
+optionally set JWT properties to enable the token filter:
 
-## What It Does
+```yaml
+khezy:
+  api:
+    security:
+      jwt:
+        secret: my-secret-key    # enables JWT filter
+```
 
-| Bean | Condition | Purpose |
-|------|-----------|---------|
-| `AuthenticationBuilderManager` | Always | Iterates registered factories to build/upgrade authentication tokens |
-| `KhezyMethodSecurityExpressionHandler` | Always | Powers `@RequiredAuthorizationRule` and `check()` in SpEL |
-| `AnnotationTemplateExpressionDefaults` | Always | Enables `@Param` template expressions in annotations |
-| `UrlBasedCorsConfigurationSource` | `khezy.api.cors.enabled=true` | Configures CORS from properties |
-| 9 × `AuthenticationBuilderFactory` | Each gated by `@ConditionalOnClass` | Provides token builders for every supported auth type |
+## What This Starter Does
 
-All beans use `@ConditionalOnMissingBean` — provide your own to override.
+When you add `api-security-spring-boot-starter` to your classpath:
 
-## Supported Auth Types (Auto-Registered)
+### Auto-configured (always)
 
-Factories are registered only when the corresponding Spring Security class is on the classpath:
+| Bean | Class | Condition |
+|------|-------|-----------|
+| `AuthenticationBuilderManager` | `KhezyApiSecurityConfig` | Always |
+| `KhezyMethodSecurityExpressionHandler` | `KhezyApiSecurityConfig` | Always |
+| `AnnotationTemplateExpressionDefaults` | `KhezyApiSecurityConfig` | Always |
+| `RestApiAccessDeniedHandler` | `KhezyErrorHandlingAutoConfiguration` | Jackson on classpath |
+| `RestApiAuthenticationEntryPoint` | `KhezyErrorHandlingAutoConfiguration` | Jackson on classpath |
+| `FactorAppendingAuthenticationManager` | `KhezyFactorAppendingAutoConfiguration` | Always |
 
-| Factory | Required Class | Factor Authority |
-|---------|---------------|-----------------|
-| `UsernamePasswordAuthenticationBuilderFactory` | `UsernamePasswordAuthenticationToken` | `FACTOR_PASSWORD` |
-| `JwtTokenAuthenticationBuilderFactory` | `JwtAuthenticationToken` | _(none — JWT is not a factor)_ |
-| `BearerTokenAuthenticationBuilderFactory` | `BearerTokenAuthentication` | `FACTOR_BEARER` |
-| `OAuth2LonginAuthenticationBuilderFactory` | `OAuth2LoginAuthenticationToken` | `FACTOR_AUTHORIZATION_CODE` |
-| `Saml2AuthenticationBuilderFactory` | `Saml2Authentication` | `FACTOR_SAML_RESPONSE` |
-| `CASTokenAuthenticationBuilderFactory` | `CasAuthenticationToken` | `FACTOR_CAS` |
-| `OneTimeTokenAuthenticationBuilderFactory` | `OneTimeTokenAuthenticationToken` | `FACTOR_OTT` |
-| `WebAuthnAuthenticationBuilderFactory` | `WebAuthnAuthentication` | `FACTOR_WEBAUTHN` |
-| `X509AuthenticationBuilderFactory` | `PreAuthenticatedAuthenticationToken` | `FACTOR_X509` |
+### Auto-configured (when `khezy.api.security.jwt.secret` is set)
 
-Add `spring-boot-starter-oauth2-client`, `spring-security-cas`, etc. to your classpath and the matching factory appears automatically.
+| Bean | Class |
+|------|-------|
+| `JwtTokenParser` | `KhezyJwtFilterAutoConfiguration` |
+| `BearerTokenExtractor` | `KhezyJwtFilterAutoConfiguration` |
+| `ClaimBasedFactorExtractor` | `KhezyJwtFilterAutoConfiguration` |
+| `KhezyJwtFilter` | `KhezyJwtFilterAutoConfiguration` |
+
+### Auto-configured (when no `SecurityFilterChain` bean exists)
+
+| Bean | Class | Condition |
+|------|-------|-----------|
+| Default `SecurityFilterChain` | `KhezyDefaultSecurityFilterChainAutoConfiguration` | `khezy.api.security.enabled=true` (default) |
+
+The default chain: CSRF disabled, stateless sessions,
+`FactorAppendingConfigurer` applied, optional CORS + JWT filter, permit
+patterns from properties.
+
+### Auto-configured (when `@EnableKhezyApiSecurity(mfAuthorities=...)` is used)
+
+| Bean | Class |
+|------|-------|
+| `RequiredFactorAuthorityAuthorization` | `MultiFactorAuthenticationConfig` |
+
+### Override any bean
+
+Define your own bean of the same type → auto-configuration is skipped.
+
+## JWT Authentication
+
+Set one property to enable JWT authentication:
+
+```yaml
+khezy:
+  api:
+    security:
+      jwt:
+        secret: my-secret-key    # enables JWT filter when set
+```
+
+That's it. The starter auto-configures:
+
+- `JwtTokenParser` — validates and parses JWT tokens (jjwt-based)
+- `BearerTokenExtractor` — extracts `Authorization: Bearer <token>` from headers
+- `ClaimBasedFactorExtractor` — extracts MFA factors from the `factors` claim
+- `KhezyJwtFilter` — populates `SecurityContext` from JWT
+
+You provide a `UserDetailsService` bean (required for user lookup).
+
+### JWT Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `khezy.api.security.jwt.secret` | _(none)_ | JWT signing secret (enables filter when set) |
+| `khezy.api.security.jwt.issuer` | _(none)_ | Expected issuer claim (validated if set) |
+| `khezy.api.security.jwt.expiration` | `3600` | Token TTL in seconds |
+| `khezy.api.security.jwt.factors-claim` | `"factors"` | Claim key for MFA factor authorities |
+
+### Override JWT Components
+
+Define your own bean to override any default:
+
+```java
+@Bean
+TokenParser customTokenParser() {
+    return new MyCustomJwtParser();  // your JWT parsing logic
+}
+```
+
+Supported overrides: `TokenParser`, `TokenExtractor`, `FactorExtractor`,
+`KhezyJwtFilter`.
+
+## Error Handling
+
+Auto-configured when Jackson is on the classpath. Returns RFC 7807
+`ProblemDetail` JSON responses.
+
+### 401 Unauthorized
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Authentication required"
+}
+```
+
+### 403 Access Denied
+
+```json
+{
+  "type": "about:blank",
+  "title": "Access Denied",
+  "status": 403,
+  "detail": "Insufficient permissions"
+}
+```
+
+### 403 MFA Required
+
+When the denial is caused by missing multi-factor authorities:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Access Denied",
+  "status": 403,
+  "detail": "Additional authentication required",
+  "properties": {
+    "requiredMFA": true,
+    "mfaMethod": "PASSWORD"
+  }
+}
+```
+
+### Override
+
+Define your own `AccessDeniedHandler` or `AuthenticationEntryPoint` bean.
+
+## Default SecurityFilterChain
+
+A default `SecurityFilterChain` is auto-configured when:
+
+- No `SecurityFilterChain` bean exists in your context
+- `khezy.api.security.enabled=true` (default)
+
+The default chain:
+
+- CSRF disabled
+- Stateless sessions
+- `FactorAppendingConfigurer` applied (wraps `AuthenticationManager` for MFA)
+- Permit patterns from `khezy.api.security.permit-patterns` (default: `/auth/**`)
+- Error dispatcher permitted
+- Optional CORS (when `khezy.api.cors.enabled=true`)
+- Optional JWT filter (when `khezy.api.security.jwt.secret` is set)
+
+### Disable Default Chain
+
+Option 1 — set property:
+
+```yaml
+khezy:
+  api:
+    security:
+      enabled: false
+```
+
+Option 2 — define your own `SecurityFilterChain` bean:
+
+```java
+@Bean
+SecurityFilterChain customChain(HttpSecurity http) throws Exception {
+    return http
+        .with(new FactorAppendingConfigurer(), configurer -> {})
+        .csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(req -> req.anyRequest().authenticated())
+        .build();
+}
+```
+
+### Security Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `khezy.api.security.enabled` | `true` | Enable default `SecurityFilterChain` |
+| `khezy.api.security.permit-all` | `false` | Permit all requests (dev mode) |
+| `khezy.api.security.permit-patterns` | `["/auth/**"]` | URL patterns to permit without auth |
+| `khezy.api.security.session-creation-policy` | `STATELESS` | Session creation policy |
+
+## Multi-Factor Authorization (Opt-In)
+
+MFA is **not** auto-configured. Enable it with `@EnableKhezyApiSecurity`:
+
+```java
+@SpringBootApplication
+@EnableKhezyApiSecurity(mfAuthorities = {"FACTOR_PASSWORD", "FACTOR_SECRET_QUESTION"})
+public class MyApp { ... }
+```
+
+Then implement the factor-requirement lookup:
+
+```java
+@Component
+public class UserFactorRepository implements RequiredFactorAuthoritiesRepository {
+    @Override
+    public List<String> findRequiredFactorAuthorities(String username) {
+        return List.of("FACTOR_PASSWORD", "FACTOR_SECRET_QUESTION");
+    }
+}
+```
+
+All authority names **must** start with `FACTOR_`. The starter validates this
+at startup and fails fast with a clear message.
+
+### How MFA Works
+
+1. `@EnableKhezyApiSecurity(mfAuthorities = {...})` enables
+   `RequiredFactorAuthorityAuthorization`
+2. `FactorAppendingConfigurer` wraps the `AuthenticationManager` to append
+   factor authorities
+3. Each authentication step accumulates factor authorities in `SecurityContext`
+4. `RequiredFactorAuthorityAuthorization` checks if all required factors are
+   present
+5. If factors are missing → 403 with `requiredMFA: true` in ProblemDetail
+   response
+
+### Override MFA
+
+Define your own `RequiredFactorAuthorityAuthorization` bean to customize MFA
+logic.
 
 ## CORS Configuration
 
@@ -71,37 +279,37 @@ All `khezy.api.cors.*` properties:
 | `max-age` | _(none)_ | Preflight cache duration in seconds |
 | `path-pattern` | _(none)_ | URL pattern to apply CORS to |
 
-## Multi-Factor Authorization (Opt-In)
-
-MFA is **not** auto-configured. Enable it explicitly with `@EnableMFA`:
-
-```java
-@EnableMFA(mfAuthorities = {"FACTOR_PASSWORD", "FACTOR_WEBAUTHN"})
-@Configuration
-public class SecurityConfig {}
-```
-
-Then implement the factor-requirement lookup:
-
-```java
-@Component
-public class UserFactorRepository implements RequiredFactorAuthoritiesRepository {
-    @Override
-    public List<String> findRequiredFactorAuthorities(String username) {
-        return List.of("FACTOR_PASSWORD", "FACTOR_WEBAUTHN");
-    }
-}
-```
-
-All authority names **must** start with `FACTOR_`. The starter validates this at startup and fails fast with a clear message.
-
 ## Row-Level Security
 
-Auto-configured when JPA is on the classpath. Registers the AOP advisor and interceptor that apply Hibernate filters via `@RowLevelSecurity`.
+Auto-configured when JPA is on the classpath. Registers the AOP advisor and
+interceptor that apply Hibernate filters via `@RowLevelSecurity`.
 
-Gated by `@ConditionalOnBean(EntityManagerFactory.class)` — if you have `spring-boot-starter-data-jpa`, it activates automatically. Otherwise, no RLS beans are created.
+Gated by `@ConditionalOnBean(EntityManagerFactory.class)` — if you have
+`spring-boot-starter-data-jpa`, it activates automatically. Otherwise, no RLS
+beans are created.
 
-See the [api-security README](../../rest-api/api-security/README.md#5-row-level-security) for usage details.
+See the [api-security README](../../rest-api/api-security/README.md#5-row-level-security)
+for usage details.
+
+## Supported Auth Types (Auto-Registered)
+
+Factories are registered only when the corresponding Spring Security class is
+on the classpath:
+
+| Factory | Required Class | Factor Authority |
+|---------|---------------|-----------------|
+| `UsernamePasswordAuthenticationBuilderFactory` | `UsernamePasswordAuthenticationToken` | `FACTOR_PASSWORD` |
+| `JwtTokenAuthenticationBuilderFactory` | `JwtAuthenticationToken` | _(none — JWT is not a factor)_ |
+| `BearerTokenAuthenticationBuilderFactory` | `BearerTokenAuthentication` | `FACTOR_BEARER` |
+| `OAuth2LonginAuthenticationBuilderFactory` | `OAuth2LoginAuthenticationToken` | `FACTOR_AUTHORIZATION_CODE` |
+| `Saml2AuthenticationBuilderFactory` | `Saml2Authentication` | `FACTOR_SAML_RESPONSE` |
+| `CASTokenAuthenticationBuilderFactory` | `CasAuthenticationToken` | `FACTOR_CAS` |
+| `OneTimeTokenAuthenticationBuilderFactory` | `OneTimeTokenAuthenticationToken` | `FACTOR_OTT` |
+| `WebAuthnAuthenticationBuilderFactory` | `WebAuthnAuthentication` | `FACTOR_WEBAUTHN` |
+| `X509AuthenticationBuilderFactory` | `PreAuthenticatedAuthenticationToken` | `FACTOR_X509` |
+
+Add `spring-boot-starter-oauth2-client`, `spring-security-cas`, etc. to your
+classpath and the matching factory appears automatically.
 
 ## Bean Override Examples
 
@@ -109,7 +317,6 @@ Override any auto-configured bean by declaring your own:
 
 ```java
 @Bean
-@ConditionalOnMissingBean
 AuthenticationBuilderManager customManager() {
     return new MyCustomBuilderManager();
 }
@@ -117,43 +324,92 @@ AuthenticationBuilderManager customManager() {
 
 ```java
 @Bean
-@ConditionalOnMissingBean
 KhezyMethodSecurityExpressionHandler customHandler() {
     return new MyCustomExpressionHandler(enrichers, registry);
+}
+```
+
+```java
+@Bean
+TokenParser customTokenParser() {
+    return new MyCustomJwtParser();
+}
+```
+
+```java
+@Bean
+AccessDeniedHandler customAccessDeniedHandler() {
+    return new MyCustomAccessDeniedHandler();
 }
 ```
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────┐
-│              Your Spring Boot Application             │
-│                                                       │
-│  @EnableMFA ──────────┐                               │
-│  AuthorizationRule ────┤                               │
-│  SecurityContextEnricher┤   (optional user beans)      │
-│  AuthenticationBuilder ┤                               │
-│  Factory               │                               │
-└───────────────────────┼──────────────────────────────┘
-                        │
-┌───────────────────────▼──────────────────────────────┐
-│        api-security-spring-boot-starter                │
-│                                                        │
-│  KhezySecurityAutoConfiguration                        │
-│    ├── KhezyApiSecurityConfig                          │
-│    │     ├── AuthenticationBuilderManager              │
-│    │     ├── KhezyMethodSecurityExpressionHandler      │
-│    │     ├── AnnotationTemplateExpressionDefaults      │
-│    │     └── CorsConfigurationSource (conditional)     │
-│    └── AuthenticationBuilderFactoryConfig              │
-│          └── 9 × Factory beans (classpath-gated)      │
-│                                                        │
-│  @EnableMFA (opt-in)                                   │
-│    └── MultiFactorImportSelector                       │
-│          └── MultiFactorAuthenticationConfig           │
-│                └── RequiredFactorAuthorityAuthorization │
-└───────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│              Your Spring Boot Application                  │
+│                                                            │
+│  @EnableKhezyApiSecurity ─────┐                            │
+│  AuthorizationRule ───────────┤                            │
+│  SecurityContextEnricher ─────┤  (optional user beans)     │
+│  AuthenticationBuilderFactory┤                            │
+│  RequiredFactorAuthoritiesRepo┤                           │
+│  UserDetailsService ──────────┤                            │
+└───────────────────────────────┼────────────────────────────┘
+                                │
+┌───────────────────────────────▼────────────────────────────┐
+│        api-security-spring-boot-starter                     │
+│                                                             │
+│  KhezySecurityAutoConfiguration                             │
+│    ├── KhezyApiSecurityConfig                               │
+│    │     ├── AuthenticationBuilderManager                   │
+│    │     ├── KhezyMethodSecurityExpressionHandler           │
+│    │     ├── AnnotationTemplateExpressionDefaults           │
+│    │     ├── defaultAuthorizationManager (fallback)         │
+│    │     └── CorsConfigurationSource (conditional)          │
+│    └── AuthenticationBuilderFactoryConfig                   │
+│          └── 9 × Factory beans (classpath-gated)           │
+│                                                             │
+│  KhezyJwtFilterAutoConfiguration (when jwt.secret set)      │
+│    ├── JwtTokenParser                                       │
+│    ├── BearerTokenExtractor                                 │
+│    ├── ClaimBasedFactorExtractor                            │
+│    └── KhezyJwtFilter                                       │
+│                                                             │
+│  KhezyErrorHandlingAutoConfiguration (when Jackson present) │
+│    ├── RestApiAccessDeniedHandler (ProblemDetail 403)       │
+│    └── RestApiAuthenticationEntryPoint (ProblemDetail 401)  │
+│                                                             │
+│  KhezyFactorAppendingAutoConfiguration                      │
+│    └── FactorAppendingAuthenticationManager                 │
+│                                                             │
+│  KhezyDefaultSecurityFilterChainAutoConfiguration           │
+│    └── defaultSecurityFilterChain (when no custom chain)    │
+│          └── FactorAppendingConfigurer applied              │
+│                                                             │
+│  @EnableKhezyApiSecurity (opt-in)                           │
+│    └── KhezyApiSecurityImportSelector                       │
+│          └── MultiFactorAuthenticationConfig                │
+│                └── RequiredFactorAuthorityAuthorization     │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+## Known Limitations
+
+1. **FactorAppendingConfigurer + custom AuthenticationManager**:
+   If you define your own `AuthenticationManager` bean,
+   `FactorAppendingConfigurer` will NOT auto-wrap it. Apply it yourself:
+   `http.with(new FactorAppendingConfigurer(), configurer -> {})`.
+
+2. **MFA is annotation-driven only**:
+   No properties-based default for `RequiredFactorAuthoritiesRepository`. MFA
+   requirements vary too much between apps. Use
+   `@EnableKhezyApiSecurity(mfAuthorities=...)`.
+
+3. **Custom SecurityFilterChain + MFA**:
+   If you define your own `SecurityFilterChain` AND use
+   `@EnableKhezyApiSecurity`, apply `FactorAppendingConfigurer` yourself. The
+   auto-configuration only applies it to the default chain.
 
 ## Modules
 

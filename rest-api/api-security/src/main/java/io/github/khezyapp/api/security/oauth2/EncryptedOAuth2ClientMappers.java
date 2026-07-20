@@ -65,8 +65,14 @@ public class EncryptedOAuth2ClientMappers {
                     .getBytes(StandardCharsets.UTF_8);
             parameters.add(new SqlParameterValue(Types.BLOB, encryptedAccessToken));
 
-            parameters.add(new SqlParameterValue(Types.TIMESTAMP, Timestamp.from(client.getAccessToken().getIssuedAt())));
-            parameters.add(new SqlParameterValue(Types.TIMESTAMP, Timestamp.from(client.getAccessToken().getExpiresAt())));
+            parameters.add(new SqlParameterValue(
+                    Types.TIMESTAMP,
+                    Timestamp.from(client.getAccessToken().getIssuedAt()))
+            );
+            parameters.add(new SqlParameterValue(
+                    Types.TIMESTAMP,
+                    Timestamp.from(client.getAccessToken().getExpiresAt()))
+            );
 
             final var scopes = CollectionUtils.isEmpty(client.getAccessToken().getScopes()) ? null :
                     StringUtils.collectionToDelimitedString(client.getAccessToken().getScopes(), ",");

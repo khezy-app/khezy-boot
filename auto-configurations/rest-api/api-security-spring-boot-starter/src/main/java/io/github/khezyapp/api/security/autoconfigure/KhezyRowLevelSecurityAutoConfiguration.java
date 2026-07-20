@@ -1,6 +1,7 @@
 package io.github.khezyapp.api.security.autoconfigure;
 
 import io.github.khezyapp.api.security.aop.RowLevelSecurityMethodInterceptor;
+import io.github.khezyapp.api.security.aop.RowLevelSecurityPointcut;
 import io.github.khezyapp.api.security.api.RowLevelSecurityRule;
 import io.github.khezyapp.api.security.expression.KhezyMethodSecurityExpressionHandler;
 import io.github.khezyapp.api.security.registry.RowLevelSecurityRuleRegistry;
@@ -42,7 +43,10 @@ public class KhezyRowLevelSecurityAutoConfiguration {
         public static Advisor rowLevelSecurityAdvisor(
                 @Lazy final RowLevelSecurityMethodInterceptor rowLevelSecurityMethodInterceptor
         ) {
-            final var advisor = new DefaultPointcutAdvisor(rowLevelSecurityMethodInterceptor);
+            final var advisor = new DefaultPointcutAdvisor(
+                    new RowLevelSecurityPointcut(),
+                    rowLevelSecurityMethodInterceptor
+            );
             advisor.setOrder(600);
             return advisor;
         }

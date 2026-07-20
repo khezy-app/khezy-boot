@@ -38,7 +38,8 @@ public class OAuth2LonginAuthenticationBuilder<B extends OAuth2LonginAuthenticat
 
     @Override
     public B addFactorAuthority() {
-        this.authorities.add(RequiredFactorAuthority.fromAuthority(RequiredFactorAuthority.AUTHORIZATION_CODE_AUTHORITY));
+        this.authorities.add(RequiredFactorAuthority
+                .fromAuthority(RequiredFactorAuthority.AUTHORIZATION_CODE_AUTHORITY));
         return (B) this;
     }
 

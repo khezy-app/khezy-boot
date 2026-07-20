@@ -1,0 +1,13 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Row-level security with Hibernate filters and the KHEZY starter'
+
+dependencies {
+    implementation "${group}:api-security-spring-boot-starter"
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.h2database:h2'
+}

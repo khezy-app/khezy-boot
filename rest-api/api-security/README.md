@@ -1,17 +1,64 @@
 # Khezy Rest API Security Library
 
-High-level Spring Security abstractions for developers. Build authorization infrastructure with simple interfaces instead of customizing Spring Security from scratch.
+High-level Spring Security abstractions for developers. Build authorization
+infrastructure with simple interfaces instead of customizing Spring Security
+from scratch.
 
 ## Philosophy
 
-Spring Security is powerful but complex. This library wraps its core concepts behind **minimal, discoverable interfaces** so beginners can:
+Spring Security is powerful but verbose. Most tutorials show you one
+authentication method — then leave you to figure out JWT pipelines, MFA
+step-up flows, and row-level security on your own.
 
-- Implement **custom authorization rules** without understanding `SecurityExpressionRoot`
-- Build **authenticated tokens** without knowing 9 different `Authentication` constructors
-- Add **multi-factor authorization** without writing `AuthorizationManager` from scratch
-- Apply **row-level security** without plumbing Hibernate filters manually
+KHEZY sits **on top of** Spring Security, not instead of it. Our goal is
+not to compete with the framework but to make it simpler to use: helper
+classes that embed best practices and sensible defaults so that even
+beginners — who may not yet know what a "best practice" is — benefit
+automatically when they adopt this library.
 
-The library provides **ready infrastructure** — you implement the **logic**.
+Some features, like multi-factor authorization, are inspired by
+approaches in Spring Boot 4. Where those patterns are not yet available
+in Spring Boot 3, we bring them forward so developers can use them today.
+
+### What this library provides
+
+- **Named authorization rules** — replace inline SpEL with testable,
+  reusable `AuthorizationRule` implementations
+- **JWT authentication pipeline** — a pluggable extract → parse → build
+  filter that handles the 9 different `Authentication` subtypes for you
+- **Multi-factor authorization** — a complete step-up flow with per-user
+  factor requirements, per-type token reconstruction, and structured error
+  responses telling the client which factor to present next
+- **Row-level security** — a single `@RowLevelSecurity` annotation that
+  manages Hibernate filter enable/disable lifecycle via AOP
+- **Security context enrichment** — inject tenant, department, or custom
+  attributes into SpEL expressions through a simple interface
+
+### What this library does NOT do
+
+This library does not replace understanding Spring Security. You still need
+to know:
+
+- How `@PreAuthorize` and SpEL method-security expressions work
+- The difference between 401 (unauthenticated) and 403 (authenticated but
+  forbidden)
+- What `Authentication` types your pipeline produces and why
+- Hibernate `@FilterDef` / `@Filter` for row-level security
+- JWT structure and signing for token-based auth
+
+### Who is this for?
+
+**Beginners** — get a working security infrastructure without reading 200 pages
+of Spring Security reference. The defaults work out of the box; customise as you
+grow.
+
+**Experienced developers** — skip the boilerplate of wiring MFA pipelines,
+OAuth2 encryption, and error handlers. You already understand the concepts;
+we give you the production-ready scaffolding.
+
+**Bootstrap projects** — need JWT auth + role-based access + MFA in a sprint?
+This starter gets you there. Replace pieces with your own implementations when
+your requirements outgrow the defaults.
 
 ## Quick Start
 
@@ -22,6 +69,73 @@ repositories {
 
 dependencies {
     implementation 'io.github.khezyapp:api-security:1.0.0'
+}
+```
+
+## Token API (JWT Authentication Pipeline)
+
+Pluggable interfaces for extracting, parsing, and enriching security tokens
+from HTTP requests.
+
+### Interfaces
+
+| Interface | Package | Purpose |
+|-----------|---------|---------|
+| `TokenExtractor` | `token` | Extract raw token from `HttpServletRequest` |
+| `TokenParser` | `token` | Parse/validate token → `ParsedToken` (subject, claims, authorities) |
+| `FactorExtractor` | `token` | Extract MFA factor authorities from claims |
+
+### Default Implementations
+
+| Class | Package | Activated When |
+|-------|---------|---------------|
+| `BearerTokenExtractor` | `token.extractor` | Always available |
+| `ClaimBasedFactorExtractor` | `token.extractor` | Always available (reads `factors` claim by default) |
+| `JwtTokenParser` | `token.parser` | `io.jsonwebtoken` on classpath |
+
+### How the Pipeline Works
+
+```
+HTTP Request
+    │
+    ▼
+TokenExtractor.extract(request)  →  Optional<String> token
+    │
+    ▼
+TokenParser.parse(token)         →  ParsedToken(subject, claims, authorities)
+    │
+    ▼
+FactorExtractor.extractFactors(claims)  →  List<String> factorAuthorities
+    │
+    ▼
+SecurityContextHolder.setAuthentication(...)
+```
+
+### KhezyJwtFilter
+
+A `OncePerRequestFilter` that orchestrates the full pipeline:
+
+1. Extracts token via `TokenExtractor`
+2. Parses JWT via `TokenParser` → gets subject, claims, granted authorities
+3. Loads `UserDetails` via `UserDetailsService`
+4. Extracts MFA factor authorities via `FactorExtractor`
+5. Merges granted authorities + factor authorities into `SecurityContextHolder`
+
+Catches all exceptions broadly — unauthenticated requests continue without
+error (the filter returns 401 later via `AuthenticationEntryPoint`).
+
+Override by defining your own `OncePerRequestFilter` bean.
+
+### RestApiAuthenticationEntryPoint
+
+Returns RFC 7807 `ProblemDetail` JSON for 401 responses:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Authentication required"
 }
 ```
 
@@ -56,7 +170,8 @@ public Document getDocument(@Param("docId") Long docId) { ... }
 
 ### 2. Security Context Enrichment
 
-Inject request-scoped attributes (tenant, department, subscription tier) into SpEL expressions:
+Inject request-scoped attributes (tenant, department, subscription tier) into
+SpEL expressions:
 
 ```java
 @Component
@@ -79,9 +194,12 @@ authenticationBuilderManager.build(currentAuth, builder ->
 );
 ```
 
-The manager iterates registered factories, finds the matching builder for the authentication type, applies your customisations, and returns the upgraded `Authentication`.
+The manager iterates registered factories, finds the matching builder for the
+authentication type, applies your customisations, and returns the upgraded
+`Authentication`.
 
 Supported types:
+
 - `UsernamePasswordAuthenticationToken` (+ `FACTOR_PASSWORD`)
 - `JwtAuthenticationToken` (no factor — JWT is not a factor method)
 - `BearerTokenAuthentication` (+ `FACTOR_BEARER`)
@@ -150,30 +268,36 @@ public class TenantRule implements RowLevelSecurityRule {
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Your Application                      │
-│  implements AuthorizationRule, SecurityContextEnricher,  │
-│  RowLevelSecurityRule, RequiredFactorAuthoritiesRepo     │
-└────────────────────┬────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Your Application                          │
+│  implements AuthorizationRule, SecurityContextEnricher,     │
+│  RowLevelSecurityRule, RequiredFactorAuthoritiesRepo,       │
+│  TokenExtractor, TokenParser, FactorExtractor               │
+└────────────────────┬────────────────────────────────────────┘
                      │
-┌────────────────────▼────────────────────────────────────┐
-│              Khezy Rest API Security Library             │
-│                                                          │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐ │
-│  │ Authorization│  │ Authentication│  │ Multi-Factor    │ │
-│  │ Rule Registry│  │ Builder Manager│  │ Authorization   │ │
-│  └─────────────┘  └──────────────┘  └─────────────────┘ │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐ │
-│  │ Row-Level    │  │ Security     │  │ Encrypted       │ │
-│  │ Security AOP │  │ Expression   │  │ OAuth2 Storage  │ │
-│  └─────────────┘  └──────────────┘  └─────────────────┘ │
-└────────────────────┬────────────────────────────────────┘
+┌────────────────────▼────────────────────────────────────────┐
+│              Khezy Rest API Security Library                 │
+│                                                              │
+│  ┌─────────────────┐  ┌──────────────────┐                  │
+│  │ Token Pipeline   │  │ Authorization    │                  │
+│  │ Extract → Parse  │  │ Rule Registry    │                  │
+│  │ → Enrich         │  │                  │                  │
+│  └─────────────────┘  └──────────────────┘                  │
+│  ┌─────────────────┐  ┌──────────────────┐                  │
+│  │ Authentication   │  │ Multi-Factor     │                  │
+│  │ Builder Manager  │  │ Authorization    │                  │
+│  └─────────────────┘  └──────────────────┘                  │
+│  ┌─────────────────┐  ┌──────────────────┐                  │
+│  │ Row-Level        │  │ Security         │                  │
+│  │ Security AOP     │  │ Expression       │                  │
+│  └─────────────────┘  └──────────────────┘                  │
+└────────────────────┬────────────────────────────────────────┘
                      │
-┌────────────────────▼────────────────────────────────────┐
-│               Spring Security (core)                     │
-│  AuthenticationManager, SecurityExpressionRoot,          │
-│  AuthorizationManager, HttpSecurity, Filter Chains       │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────▼────────────────────────────────────────┐
+│               Spring Security (core)                         │
+│  AuthenticationManager, SecurityExpressionRoot,              │
+│  AuthorizationManager, HttpSecurity, Filter Chains           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Extension Points
@@ -186,6 +310,9 @@ public class TenantRule implements RowLevelSecurityRule {
 | `AuthenticationBuilderFactory` | `token.factory` | Factory for custom authentication types |
 | `RequiredFactorAuthoritiesRepository` | `authority` | Per-user MFA factor requirements |
 | `EncryptorRegistry` | `crypto` | Custom encryptor source for token persistence |
+| `TokenExtractor` | `token` | Extract raw token from HTTP request |
+| `TokenParser` | `token` | Parse/validate JWT tokens |
+| `FactorExtractor` | `token` | Extract MFA factor authorities from claims |
 
 ## Modules
 

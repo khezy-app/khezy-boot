@@ -5,7 +5,6 @@ import io.github.khezyapp.api.security.token.factory.AuthenticationBuilderFactor
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;

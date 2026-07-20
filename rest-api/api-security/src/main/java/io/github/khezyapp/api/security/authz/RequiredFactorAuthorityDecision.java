@@ -41,6 +41,7 @@ public class RequiredFactorAuthorityDecision extends AuthorizationDecision {
      */
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " [" + "granted=" + isGranted() + ", authorities=" + this.factorErrors + ']';
+        return getClass().getSimpleName() + " [" + "granted=" + isGranted() +
+                ", authorities=" + this.factorErrors + ']';
     }
 }

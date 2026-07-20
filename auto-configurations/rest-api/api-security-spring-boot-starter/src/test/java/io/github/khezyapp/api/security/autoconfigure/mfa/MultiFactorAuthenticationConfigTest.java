@@ -1,10 +1,10 @@
 package io.github.khezyapp.api.security.autoconfigure.mfa;
 
 import io.github.khezyapp.api.security.autoconfigure.KhezySecurityAutoConfiguration;
-import io.github.khezyapp.api.security.authority.RequiredFactorAuthoritiesRepository;
+import io.github.khezyapp.api.security.autoconfigure.annotation.EnableKhezyApiSecurity;
 import io.github.khezyapp.api.security.autoconfigure.annotation.EnableMFA;
+import io.github.khezyapp.api.security.authority.RequiredFactorAuthoritiesRepository;
 import io.github.khezyapp.api.security.authz.RequiredFactorAuthorityAuthorization;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -12,12 +12,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class MultiFactorAuthenticationConfigTest {
 
@@ -34,10 +32,8 @@ class MultiFactorAuthenticationConfigTest {
                     assertThat(context)
                             .hasSingleBean(RequiredFactorAuthorityAuthorization.class);
 
-                    @SuppressWarnings("unchecked")
-                    final var auth = (RequiredFactorAuthorityAuthorization<RequestAuthorizationContext>)
-                            context.getBean(RequiredFactorAuthorityAuthorization.class);
-                    assertThat(auth).isNotNull();
+                    assertThat(context.getBean(RequiredFactorAuthorityAuthorization.class))
+                            .isNotNull();
                 });
     }
 
@@ -46,6 +42,17 @@ class MultiFactorAuthenticationConfigTest {
     void shouldCreateWithoutRepository() {
         this.contextRunner
                 .withUserConfiguration(MfaWithoutRepositoryConfig.class)
+                .run(context -> {
+                    assertThat(context)
+                            .hasSingleBean(RequiredFactorAuthorityAuthorization.class);
+                });
+    }
+
+    @Test
+    @DisplayName("Should create authorization from @EnableKhezyApiSecurity annotation")
+    void shouldCreateFromEnableKhezyApiSecurity() {
+        this.contextRunner
+                .withUserConfiguration(KhezyApiSecurityConfig.class)
                 .run(context -> {
                     assertThat(context)
                             .hasSingleBean(RequiredFactorAuthorityAuthorization.class);
@@ -67,6 +74,12 @@ class MultiFactorAuthenticationConfigTest {
     @EnableMFA(mfAuthorities = {"FACTOR_PASSWORD"})
     @Import(KhezySecurityAutoConfiguration.class)
     static class MfaWithoutRepositoryConfig {
+
+    }
+
+    @EnableKhezyApiSecurity(mfAuthorities = {"FACTOR_PASSWORD", "FACTOR_SECRET_QUESTION"})
+    @Import(KhezySecurityAutoConfiguration.class)
+    static class KhezyApiSecurityConfig {
 
     }
 }

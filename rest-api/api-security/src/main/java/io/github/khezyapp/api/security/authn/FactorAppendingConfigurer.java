@@ -3,13 +3,14 @@ package io.github.khezyapp.api.security.authn;
 import io.github.khezyapp.api.security.token.AuthenticationBuilderManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 
 /**
  * A Spring Security {@link AbstractHttpConfigurer} that replaces the default
- * {@link org.springframework.security.authentication.AuthenticationManager} with a {@link FactorAppendingAuthenticationManager}
+ * {@link org.springframework.security.authentication.AuthenticationManager}
+ * with a {@link FactorAppendingAuthenticationManager}
  * during {@code HttpSecurity} initialisation. Wired automatically when the
  * {@code KhezySecurityAutoConfiguration} is active.
  */
@@ -25,14 +26,15 @@ public class FactorAppendingConfigurer extends AbstractHttpConfigurer<FactorAppe
     public void init(final HttpSecurity http) throws Exception {
         log.info("Initializing FactorAppendingConfigurer: Appending custom multi-factor authentication steps.");
 
-        final var localBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        final var defaultManager = localBuilder.build();
-
         final var context = http.getSharedObject(ApplicationContext.class);
+        final var authConfig = context.getBean(AuthenticationConfiguration.class);
+        final var defaultManager = authConfig.getAuthenticationManager();
+
         final var builderManager = context.getBean(AuthenticationBuilderManager.class);
 
         if (log.isDebugEnabled()) {
-            log.debug("Wiring FactorAppendingAuthenticationManager. Found default manager: [{}], extracted builder manager: [{}]",
+            log.debug("Wiring FactorAppendingAuthenticationManager. "
+                            + "Found default manager: [{}], extracted builder manager: [{}]",
                     defaultManager.getClass().getSimpleName(),
                     builderManager.getClass().getName());
         }

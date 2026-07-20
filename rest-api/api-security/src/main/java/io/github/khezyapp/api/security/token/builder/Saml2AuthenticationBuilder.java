@@ -36,7 +36,7 @@ public class Saml2AuthenticationBuilder<B extends Saml2AuthenticationBuilder<B>>
 
     @Override
     public Saml2Authentication build() {
-        final var saml2 = new Saml2Authentication(this.principal, this.saml2Response ,this.authorities);
+        final var saml2 = new Saml2Authentication(this.principal, this.saml2Response, this.authorities);
         saml2.setDetails(this.details);
         return saml2;
     }

@@ -2,6 +2,7 @@ package io.github.khezyapp.api.security.autoconfigure.mfa;
 
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthoritiesRepository;
 import io.github.khezyapp.api.security.authz.RequiredFactorAuthorityAuthorization;
+import io.github.khezyapp.api.security.autoconfigure.annotation.EnableKhezyApiSecurity;
 import io.github.khezyapp.api.security.autoconfigure.annotation.EnableMFA;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -13,6 +14,7 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 @Configuration
 @Slf4j
@@ -33,8 +35,19 @@ public class MultiFactorAuthenticationConfig implements ImportAware {
 
     @Override
     public void setImportMetadata(final AnnotationMetadata importMetadata) {
+        final var enableKhezyApiSecurity = importMetadata.getAnnotationAttributes(
+                EnableKhezyApiSecurity.class.getName()
+        );
         final var enableMFA = importMetadata.getAnnotationAttributes(EnableMFA.class.getName());
-        final var mfAuthorities = (String[]) enableMFA.get("mfAuthorities");
+
+        String[] mfAuthorities;
+        if (Objects.nonNull(enableKhezyApiSecurity)) {
+            mfAuthorities = (String[]) enableKhezyApiSecurity.get("mfAuthorities");
+        } else if (Objects.nonNull(enableMFA)) {
+            mfAuthorities = (String[]) enableMFA.get("mfAuthorities");
+        } else {
+            mfAuthorities = new String[0];
+        }
         this.authorities = Arrays.asList(mfAuthorities);
 
         if (log.isDebugEnabled()) {

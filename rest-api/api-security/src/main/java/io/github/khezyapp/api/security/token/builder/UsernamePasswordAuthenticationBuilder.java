@@ -30,7 +30,11 @@ public class UsernamePasswordAuthenticationBuilder<B extends UsernamePasswordAut
 
     @Override
     public UsernamePasswordAuthenticationToken build() {
-        final var username = new UsernamePasswordAuthenticationToken(this.principal, this.credentials, this.authorities);
+        final var username = new UsernamePasswordAuthenticationToken(
+                this.principal,
+                this.credentials,
+                this.authorities
+        );
         username.setDetails(this.details);
         return username;
     }

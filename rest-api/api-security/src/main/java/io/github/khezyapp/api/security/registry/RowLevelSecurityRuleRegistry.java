@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry that stores and resolves named {@link RowLevelSecurityRule} instances.
- * Rules are indexed by uppercased name and applied via {@link #enableFilter(String, KhezySecurityExpressionRoot, RowLevelSecurity, Object...)}.
+ * Rules are indexed by uppercased name and applied via
+ * {@link #enableFilter(String, KhezySecurityExpressionRoot, RowLevelSecurity, Object...)}.
  */
 public class RowLevelSecurityRuleRegistry {
     private final Map<String, RowLevelSecurityRule> rules = new ConcurrentHashMap<>();
@@ -33,7 +34,8 @@ public class RowLevelSecurityRuleRegistry {
      * @param ruleName          the rule name (case-insensitive)
      * @param root              the security expression root providing context
      * @param rowLevelSecurity  the annotation metadata for the filter
-     * @param args              optional arguments forwarded to the rule's {@link RowLevelSecurityRule#enableFilter} method
+     * @param args              optional arguments forwarded to the rule's
+     * {@link RowLevelSecurityRule#enableFilter} method
      * @throws IllegalArgumentException if no rule is registered under the given name
      */
     public void enableFilter(final String ruleName,

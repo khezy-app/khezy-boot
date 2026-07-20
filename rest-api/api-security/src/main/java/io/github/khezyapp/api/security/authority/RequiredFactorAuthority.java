@@ -13,7 +13,7 @@ import java.util.Objects;
  * factor name without the prefix.
  */
 public class RequiredFactorAuthority implements GrantedAuthority {
-    public static String PREFIX = "FACTOR_";
+    public static final String PREFIX = "FACTOR_";
 
     @Serial
     private static final long serialVersionUID = 1L;

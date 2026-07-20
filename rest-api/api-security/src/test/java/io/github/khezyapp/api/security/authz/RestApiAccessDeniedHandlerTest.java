@@ -1,11 +1,11 @@
 package io.github.khezyapp.api.security.authz;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.khezyapp.api.security.data.AccessDeniedResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 
@@ -44,13 +44,15 @@ class RestApiAccessDeniedHandlerTest {
         handler.handle(request, response, accessDenied);
 
         verify(response).setStatus(403);
-        verify(response).setContentType("application/json");
+        verify(response).setContentType("application/problem+json");
 
-        final var json = objectMapper.readValue(stringWriter.toString(), AccessDeniedResponse.class);
-        assertThat(json.getRequiredMFA()).isTrue();
-        assertThat(json.getMfaMethod()).isEqualTo("password");
-        assertThat(json.getDetail()).isEqualTo("Additional authentication required");
-        assertThat(json.getStatus()).isEqualTo(403);
+        final var problem = objectMapper.readValue(
+                stringWriter.toString(), ProblemDetail.class
+        );
+        assertThat(problem.getStatus()).isEqualTo(403);
+        assertThat(problem.getDetail()).isEqualTo("Additional authentication required");
+        assertThat(problem.getProperties()).containsEntry("requiredMFA", true);
+        assertThat(problem.getProperties()).containsEntry("mfaMethod", "password");
     }
 
     @Test
@@ -63,9 +65,13 @@ class RestApiAccessDeniedHandlerTest {
 
         verify(response).setStatus(403);
 
-        final var json = objectMapper.readValue(stringWriter.toString(), AccessDeniedResponse.class);
-        assertThat(json.getRequiredMFA()).isNull();
-        assertThat(json.getMfaMethod()).isNull();
-        assertThat(json.getDetail()).isEqualTo("Insufficient permissions");
+        final var problem = objectMapper.readValue(
+                stringWriter.toString(), ProblemDetail.class
+        );
+        assertThat(problem.getStatus()).isEqualTo(403);
+        assertThat(problem.getDetail()).isEqualTo("Insufficient permissions");
+        assertThat(problem.getProperties()).satisfies(props -> {
+            assertThat(props).isNullOrEmpty();
+        });
     }
 }

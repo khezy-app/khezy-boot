@@ -1,0 +1,8 @@
+pluginManagement {
+    includeBuild("../../../build-logic")
+}
+
+includeBuild("../../../rest-api/api-security")
+includeBuild("../../../auto-configurations/rest-api/api-security-spring-boot-starter")
+
+rootProject.name = "example-security-context-enrichment"

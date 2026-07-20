@@ -23,7 +23,8 @@ import java.util.function.Supplier;
  */
 @RequiredArgsConstructor
 public class RequiredFactorAuthorityAuthorization<T> implements AuthorizationManager<T> {
-    private final AuthenticatedAuthorizationManager<T> authenticated = AuthenticatedAuthorizationManager.authenticated();
+    private final AuthenticatedAuthorizationManager<T> authenticated =
+            AuthenticatedAuthorizationManager.authenticated();
     private final RequiredFactorAuthoritiesRepository requiredFactorAuthoritiesRepository;
     private final List<String> globalMFAuthorities;
 

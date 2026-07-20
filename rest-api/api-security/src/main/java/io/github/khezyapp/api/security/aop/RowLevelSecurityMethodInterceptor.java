@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.hibernate.Session;
+import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.expression.EvaluationContext;
@@ -17,6 +19,7 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -40,7 +43,7 @@ public class RowLevelSecurityMethodInterceptor implements MethodInterceptor {
     public Object invoke(final MethodInvocation invocation) throws Throwable {
         Session session = null;
 
-        final var method = invocation.getMethod();
+        final var method = getSpecificMethod(invocation);
         final var annotations = AnnotatedElementUtils.findAllMergedAnnotations(method, RowLevelSecurity.class);
         final var enabledFilters = new ArrayList<String>();
 
@@ -98,6 +101,13 @@ public class RowLevelSecurityMethodInterceptor implements MethodInterceptor {
         return expressionHandler.createEvaluationContext(
                 () -> SecurityContextHolder.getContext().getAuthentication(),
                 invocation
+        );
+    }
+
+    private static Method getSpecificMethod(final MethodInvocation invocation) {
+        return AopUtils.getMostSpecificMethod(
+                invocation.getMethod(),
+                AopProxyUtils.ultimateTargetClass(invocation.getThis())
         );
     }
 }

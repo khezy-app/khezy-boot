@@ -1,2 +1,6 @@
 io.github.khezyapp.api.security.autoconfigure.KhezySecurityAutoConfiguration
 io.github.khezyapp.api.security.autoconfigure.KhezyRowLevelSecurityAutoConfiguration
+io.github.khezyapp.api.security.autoconfigure.KhezyJwtFilterAutoConfiguration
+io.github.khezyapp.api.security.autoconfigure.KhezyErrorHandlingAutoConfiguration
+io.github.khezyapp.api.security.autoconfigure.KhezyFactorAppendingAutoConfiguration
+io.github.khezyapp.api.security.autoconfigure.KhezyDefaultSecurityFilterChainAutoConfiguration

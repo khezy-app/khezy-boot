@@ -10,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry that stores and resolves named {@link AuthorizationRule} instances.
- * Rules are indexed by uppercased name and evaluated via {@link #check(String, KhezySecurityExpressionRoot, Object...)}.
+ * Rules are indexed by uppercased name and evaluated via
+ * {@link #check(String, KhezySecurityExpressionRoot, Object...)}.
  */
 public class AuthorizationRuleRegistry {
     private final Map<String, AuthorizationRule> rules = new ConcurrentHashMap<>();

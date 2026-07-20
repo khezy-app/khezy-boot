@@ -14,8 +14,7 @@ public class MultiFactorImportSelector implements ImportSelector {
         final var enableMFA = importingClassMetadata.getAnnotationAttributes(EnableMFA.class.getName());
         final var authorities = (String[]) enableMFA.get("mfAuthorities");
         final var invalidAuthorities = new ArrayList<String>();
-        for (var idx = 0; idx < authorities.length; idx++) {
-            final var authority = authorities[idx];
+        for (final String authority : authorities) {
             if (!authority.startsWith(RequiredFactorAuthority.PREFIX)) {
                 invalidAuthorities.add(authority);
             }

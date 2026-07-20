@@ -3,6 +3,7 @@ package io.github.khezyapp.api.security.autoconfigure;
 import io.github.khezyapp.api.security.api.AuthorizationRule;
 import io.github.khezyapp.api.security.api.SecurityContextEnricher;
 import io.github.khezyapp.api.security.autoconfigure.properties.KhezyCorsProperties;
+import io.github.khezyapp.api.security.authz.RequiredFactorAuthorityAuthorization;
 import io.github.khezyapp.api.security.expression.KhezyMethodSecurityExpressionHandler;
 import io.github.khezyapp.api.security.registry.AuthorizationRuleRegistry;
 import io.github.khezyapp.api.security.token.AuthenticationBuilderManager;
@@ -13,7 +14,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
@@ -61,12 +66,19 @@ public class KhezyApiSecurityConfig {
         );
     }
 
+    @Bean
+    @ConditionalOnMissingBean(RequiredFactorAuthorityAuthorization.class)
+    AuthorizationManager<RequestAuthorizationContext> defaultAuthorizationManager() {
+        return AuthenticatedAuthorizationManager.authenticated();
+    }
+
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnBooleanProperty(prefix = "khezy.api.cors", name = "enabled")
     @ConditionalOnClass(name = "org.springframework.web.cors.UrlBasedCorsConfigurationSource")
     static class CorsConfigurationSourceConfiguration {
 
         @Bean
+        @Primary
         @ConditionalOnMissingBean
         public UrlBasedCorsConfigurationSource apiCorsConfigurationSource(
                 final KhezyCorsProperties properties

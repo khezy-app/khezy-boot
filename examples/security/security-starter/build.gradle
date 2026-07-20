@@ -1,0 +1,12 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Plug-and-play JWT security with the KHEZY starter'
+
+dependencies {
+    implementation "${group}:api-security-spring-boot-starter"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+}

@@ -3,12 +3,13 @@ package io.github.khezyapp.api.security.authz;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthority;
 import io.github.khezyapp.api.security.authority.RequiredFactorError;
-import io.github.khezyapp.api.security.data.AccessDeniedResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorityAuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -24,9 +25,10 @@ import static io.github.khezyapp.api.security.util.FactorAuthorities.FACTOR_PREF
 import static io.github.khezyapp.api.security.util.FactorAuthorities.getFactorMethod;
 
 /**
- * An {@link AccessDeniedHandler} that produces structured JSON error responses
- * for REST API requests. When the denial is caused by missing multi-factor
- * authorities, the response includes {@code requiredMFA: true} and the
+ * An {@link AccessDeniedHandler} that produces structured
+ * {@link ProblemDetail} (RFC 7807) JSON responses for REST API requests.
+ * When the denial is caused by missing multi-factor authorities,
+ * the response includes {@code requiredMFA: true} and the
  * specific {@code mfaMethod} needed.
  */
 @RequiredArgsConstructor
@@ -37,9 +39,9 @@ public class RestApiAccessDeniedHandler implements AccessDeniedHandler {
     private final ObjectMapper objectMapper;
 
     /**
-     * Writes a {@code 403} JSON response. If the exception chains to an
-     * {@link org.springframework.security.authorization.AuthorizationDeniedException}
-     * with factor-related errors, the body signals that additional MFA is required.
+     * Writes a {@code 403} ProblemDetail response. If the exception chains to an
+     * {@link AuthorizationDeniedException} with factor-related errors, the body
+     * signals that additional MFA is required.
      */
     @Override
     public void handle(final HttpServletRequest request,
@@ -50,18 +52,21 @@ public class RestApiAccessDeniedHandler implements AccessDeniedHandler {
                 .filter(a -> Objects.nonNull(a.requiredFactorError()))
                 .toList();
 
-        final var deniedResponse = new AccessDeniedResponse();
-        deniedResponse.setStatus(403);
-        deniedResponse.setDetail(DEFAULT_MSG);
+        final var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                DEFAULT_MSG
+        );
+        problem.setTitle("Access Denied");
+
         if (!factorAuthorityError.isEmpty()) {
-            deniedResponse.setRequiredMFA(true);
-            deniedResponse.setMfaMethod(getFactorMethod(factorAuthorityError.get(0).authority));
-            deniedResponse.setDetail(MFA_REQUIRED_MSG);
+            problem.setProperty("requiredMFA", true);
+            problem.setProperty("mfaMethod", getFactorMethod(factorAuthorityError.get(0).authority));
+            problem.setDetail(MFA_REQUIRED_MSG);
         }
 
-        response.setStatus(403);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(deniedResponse));
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(problem));
     }
 
     private List<AuthorityRequiredFactorErrorEntry> authorityErrors(
@@ -110,7 +115,9 @@ public class RestApiAccessDeniedHandler implements AccessDeniedHandler {
             return (AuthorizationDeniedException) accessDeniedException;
         }
         final var chains = analyzer.determineCauseChain(accessDeniedException);
-        return (AuthorizationDeniedException) analyzer.getFirstThrowableOfType(AuthorizationDeniedException.class, chains);
+        return (AuthorizationDeniedException) analyzer.getFirstThrowableOfType(
+                AuthorizationDeniedException.class, chains
+        );
     }
 
     private record AuthorityRequiredFactorErrorEntry(
