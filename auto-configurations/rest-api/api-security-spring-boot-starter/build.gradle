@@ -33,6 +33,13 @@ mavenPublishing {
     pom {
         name = 'Khezy Rest API Security Starter'
         description = """
+            Spring Boot auto-configuration for securing REST APIs with the KHEZY security library.
+            Provides a plug-and-play security foundation: JWT authentication, default filter chain,
+            multi-factor authentication (following Spring Security 7's factor authority pattern),
+            row-level security via Hibernate filters, custom security context enrichment,
+            and attribute-based authorization rules. Includes RFC 7807 error responses, CORS,
+            and OAuth2 token encryption. Activate with @EnableKhezyApiSecurity.
+            Sits on top of Spring Security, not instead of it.
         """
     }
 }
