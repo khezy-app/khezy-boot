@@ -3,21 +3,21 @@ plugins {
 }
 
 group = "io.github.khezyapp"
-version = "1.0.0"
+version = "2.0.0"
 
 ext {
-    javersVersion = "7.11.0"
+    javersVersion = "7.11.5"
 }
 
 dependencies {
-    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
     compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
     compileOnly 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.micrometer:micrometer-tracing-bridge-otel'
     implementation "org.javers:javers-core:${javersVersion}"
-    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 }
 

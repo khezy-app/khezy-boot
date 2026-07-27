@@ -14,13 +14,13 @@ import static org.mockito.Mockito.*;
 
 class KhezySecurityExpressionRootTest {
 
-    private KhezySecurityExpressionRoot root;
+    private KhezySecurityExpressionRoot<?> root;
     private AuthorizationRuleRegistry registry;
 
     @BeforeEach
     void setUp() {
         final var auth = mock(Authentication.class);
-        root = new KhezySecurityExpressionRoot(auth);
+        root = new KhezySecurityExpressionRoot<>(auth);
         registry = mock(AuthorizationRuleRegistry.class);
         root.setAuthorizationRuleRegistry(registry);
 

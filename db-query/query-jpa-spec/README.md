@@ -35,14 +35,14 @@ Add the library to your project using the following coordinates:
 <dependency>
     <groupId>io.github.khezyapp</groupId>
     <artifactId>query-jpa-spec</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
 ### Gradle
 ```groovy
 dependencies {
-    implementation 'io.github.khezyapp:query-jpa-spec:1.0.0'
+    implementation 'io.github.khezyapp:query-jpa-spec:2.0.0'
 }
 ```
 

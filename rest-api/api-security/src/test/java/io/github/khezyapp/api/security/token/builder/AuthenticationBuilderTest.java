@@ -3,7 +3,7 @@ package io.github.khezyapp.api.security.token.builder;
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthority;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthentication;
 import org.springframework.security.cas.authentication.CasAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationToken;
@@ -25,6 +25,7 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -138,19 +139,19 @@ public class AuthenticationBuilderTest {
 
     @Test
     void oneTimeTokenShouldBuildCorrectToken() {
-        final var source = new OneTimeTokenAuthenticationToken("token-value");
+        final var source = new OneTimeTokenAuthentication("token-value", Collections.emptyList());
         final var builder = new OneTimeTokenAuthenticationBuilder<>(source);
         builder.authorities(new SimpleGrantedAuthority("ROLE_USER"));
 
         final var result = builder.build();
 
-        assertThat(result).isInstanceOf(OneTimeTokenAuthenticationToken.class);
+        assertThat(result).isInstanceOf(OneTimeTokenAuthentication.class);
         assertThat(result.isAuthenticated()).isTrue();
     }
 
     @Test
     void oneTimeTokenShouldAppendFactorAuthority() {
-        final var source = new OneTimeTokenAuthenticationToken("token-value");
+        final var source = new OneTimeTokenAuthentication("token-value", Collections.emptyList());
         final var builder = new OneTimeTokenAuthenticationBuilder<>(source);
         builder.addFactorAuthority();
 

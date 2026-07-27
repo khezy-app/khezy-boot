@@ -1,6 +1,5 @@
 package io.github.khezyapp.api.exception.controller;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import io.github.khezyapp.api.exception.ErrorMessageCode;
 import io.github.khezyapp.api.exception.ExceptionMessages;
 import io.github.khezyapp.api.exception.custom.InputValidationException;
@@ -10,6 +9,7 @@ import io.github.khezyapp.api.exception.data.ErrorResponse;
 import io.github.khezyapp.api.exception.data.FieldErrorResponse;
 import io.github.khezyapp.api.exception.logging.ErrorLogger;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.json.JsonParseException;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +17,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -102,13 +103,13 @@ public class CommonExceptionAdviceController {
         if (e.getCause() instanceof JsonParseException jpe) {
             message = messageSource.getMessage(ExceptionMessages.PARSE_JSON_ERROR, null, locale);
             debugErrorBuilder.message("JSON Syntax Error")
-                    .detail("originalMessage", jpe.getOriginalMessage())
+                    .detail("originalMessage", jpe.getMessage())
                     .detail("solution",
                             """
                                     Check for missing commas, unclosed braces {}, or unquoted keys. \
                                     Ensure you are using double quotes (") not single quotes (').""");
 
-        } else if (e.getCause() instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException ife) {
+        } else if (e.getCause() instanceof InvalidFormatException ife) {
             message = messageSource.getMessage(ExceptionMessages.INVALID_JSON_FORMAT,
                     new Object[]{ife.getValue(), ife.getTargetType().getSimpleName()}, locale);
 

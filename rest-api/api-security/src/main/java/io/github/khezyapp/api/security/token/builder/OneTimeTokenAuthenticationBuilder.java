@@ -1,10 +1,10 @@
 package io.github.khezyapp.api.security.token.builder;
 
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthority;
-import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthentication;
 
 /**
- * Builder for {@link OneTimeTokenAuthenticationToken}.
+ * Builder for {@link OneTimeTokenAuthentication}.
  * Allows reconfiguration of a one-time token before building a new authenticated instance.
  *
  * @param <B> the concrete builder type returned by mutators
@@ -14,11 +14,11 @@ public class OneTimeTokenAuthenticationBuilder<B extends OneTimeTokenAuthenticat
         extends AbstractAuthenticationBuilder<B> {
 
     /**
-     * Creates a builder from an existing {@link OneTimeTokenAuthenticationToken}.
+     * Creates a builder from an existing {@link OneTimeTokenAuthentication}.
      *
      * @param authentication the existing token to copy values from
      */
-    public OneTimeTokenAuthenticationBuilder(final OneTimeTokenAuthenticationToken authentication) {
+    public OneTimeTokenAuthenticationBuilder(final OneTimeTokenAuthentication authentication) {
         super(authentication);
     }
 
@@ -29,8 +29,8 @@ public class OneTimeTokenAuthenticationBuilder<B extends OneTimeTokenAuthenticat
     }
 
     @Override
-    public OneTimeTokenAuthenticationToken build() {
-        final var oneTimeToken = OneTimeTokenAuthenticationToken.authenticated(this.principal, this.authorities);
+    public OneTimeTokenAuthentication build() {
+        final var oneTimeToken = new OneTimeTokenAuthentication(this.principal, this.authorities);
         oneTimeToken.setDetails(this.details);
         return oneTimeToken;
     }

@@ -17,8 +17,8 @@ beginners — who may not yet know what a "best practice" is — benefit
 automatically when they adopt this library.
 
 Some features, like multi-factor authorization, are inspired by
-approaches in Spring Boot 4. Where those patterns are not yet available
-in Spring Boot 3, we bring them forward so developers can use them today.
+approaches in Spring Security 7. The library brings these patterns
+forward so developers can use them without waiting for framework support.
 
 ### What this library provides
 
@@ -68,7 +68,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.github.khezyapp:api-security:1.0.0'
+    implementation 'io.github.khezyapp:api-security:2.0.0'
 }
 ```
 
@@ -324,13 +324,13 @@ public class TenantRule implements RowLevelSecurityRule {
 Add the starter to auto-configure:
 
 ```groovy
-implementation 'io.github.khezyapp:api-security-spring-boot-starter:1.0.0'
+implementation 'io.github.khezyapp:api-security-spring-boot-starter:2.0.0'
 ```
 
 ## Requirements
 
 - Java 17+
-- Spring Boot 3.x (managed via BOM from `khezy.springboot-library`)
+- Spring Boot 4.x (managed via BOM from `khezy.springboot-library`)
 
 ## Build
 

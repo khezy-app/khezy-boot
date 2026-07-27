@@ -1,6 +1,6 @@
 # Khezy API Exception Library
 
-A lightweight, production-ready exception handling starter for Spring Boot 3+ applications. 
+A lightweight, production-ready exception handling starter for Spring Boot 4+ applications. 
 This library provides a standardized way to handle global exceptions by extending 
 the **RFC 7807 (Problem Details for HTTP APIs)** specification via Spring's `ProblemDetail` class.
 
@@ -37,7 +37,7 @@ register all handlers, loggers, and message sources.
 <dependency>
     <groupId>io.github.khezyapp</groupId>
     <artifactId>api-exception-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -45,7 +45,7 @@ register all handlers, loggers, and message sources.
 
 ```gradle
 dependencies {
-    implementation 'io.github.khezyapp:api-exception-spring-boot-starter:1.0.0'
+    implementation 'io.github.khezyapp:api-exception-spring-boot-starter:2.0.0'
 }
 ```
 
@@ -62,7 +62,7 @@ use the Library module directly.
 <dependency>
     <groupId>io.github.khezyapp</groupId>
     <artifactId>api-exception</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -70,7 +70,7 @@ use the Library module directly.
 
 ```gradle
 dependencies {
-    implementation 'io.github.khezyapp:api-exception:1.0.0'
+    implementation 'io.github.khezyapp:api-exception:2.0.0'
 }
 ```
 

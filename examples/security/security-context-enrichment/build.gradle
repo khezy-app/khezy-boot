@@ -8,6 +8,5 @@ description = 'Custom context enrichment and authorization rules with the KHEZY 
 
 dependencies {
     implementation "${group}:api-security-spring-boot-starter"
-    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 }

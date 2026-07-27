@@ -1,6 +1,5 @@
 package io.github.khezyapp.api.security.authz;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthority;
 import io.github.khezyapp.api.security.authority.RequiredFactorError;
 import jakarta.servlet.ServletException;
@@ -15,6 +14,7 @@ import org.springframework.security.authorization.AuthorityAuthorizationDecision
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.util.ThrowableAnalyzer;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Collections;

@@ -3,7 +3,7 @@ package io.github.khezyapp.api.security.token.factory;
 import io.github.khezyapp.api.security.token.builder.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthentication;
 import org.springframework.security.cas.authentication.CasAuthenticationToken;
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.security.web.webauthn.authentication.WebAuthnAuthentication;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,13 +64,13 @@ class AuthenticationBuilderFactoryTest {
     @Test
     void oneTimeTokenFactoryShouldSupportCorrectType() {
         final var factory = new OneTimeTokenAuthenticationBuilderFactory();
-        assertThat(factory.supports(OneTimeTokenAuthenticationToken.class)).isTrue();
+        assertThat(factory.supports(OneTimeTokenAuthentication.class)).isTrue();
         assertThat(factory.supports(String.class)).isFalse();
     }
 
     @Test
     void oneTimeTokenFactoryShouldCreateBuilder() {
-        final var auth = new OneTimeTokenAuthenticationToken("token");
+        final var auth = new OneTimeTokenAuthentication("token", Collections.emptyList());
         final var builder = new OneTimeTokenAuthenticationBuilderFactory().create(auth);
         assertThat(builder).isInstanceOf(OneTimeTokenAuthenticationBuilder.class);
     }

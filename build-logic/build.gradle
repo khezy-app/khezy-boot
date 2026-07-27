@@ -9,7 +9,7 @@ repositories {
 
 ext {
     mavenPublishVersion = "0.36.0"
-    springBootVersion = "3.5.11"
+    springBootVersion = "4.1.0"
     dependencyManagementVersion = "1.1.7"
 }
 

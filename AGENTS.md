@@ -16,6 +16,13 @@ Gradle **composite build** — each subdirectory is an independent Gradle build 
 | `examples/` | `db-query-jpa-spec`, `db-query-jooq-spec`, `security-starter`, `security-context-enrichment`, `security-row-level`, `security-mfa`, `security-customization` | `khezy.springboot` |
 | `build-logic/` | Convention plugins (`khezy.*`) | Separate included build |
 
+## Versions
+
+- **Spring Boot 4.1.0** — upgraded from 3.5.x. See `build-logic/build.gradle` for the canonical version.
+- **Gradle 9.6.1** — composite builds; do not use `include()`.
+- **Java 17 target** (source/target), **JDK 21 toolchain**.
+- **Checkstyle 13.1.0** — rules in `build-logic/src/main/resources/config/checkstyle/checkstyle.xml`.
+
 ## Build & Verify
 
 ```bash
@@ -87,6 +94,22 @@ Located in `build-logic/src/main/groovy/`. Key ones:
 - No star imports in production code; `Objects.requireNonNull` for validation
 - Checkstyle enforced on `src/main/java` — will fail CI on violations
 
+## Spring Boot 4 Migration Notes
+
+### Jackson 3.x package change
+Spring Boot 4 ships Jackson 3.x. The `ObjectMapper` and serialization APIs moved from `com.fasterxml.jackson.databind.*` to `tools.jackson.*`:
+- `tools.jackson.databind.ObjectMapper` (not `com.fasterxml.jackson.databind.ObjectMapper`)
+- `tools.jackson.databind.SerializationContext` (not `com.fasterxml.jackson.databind.SerializerProvider`)
+- `tools.jackson.core.JacksonException`, `tools.jackson.core.JsonGenerator` (not `com.fasterxml.jackson.core.*`)
+- `tools.jackson.databind.ser.std.StdSerializer` (not `com.fasterxml.jackson.databind.ser.std.*`)
+- **Annotations** still use `com.fasterxml.jackson.annotation.*` — they did not move (e.g., `@JsonInclude`, `@JsonCreator`, `@JsonIgnore`, `@JsonAnyGetter`).
+
+### `spring-boot-starter-webmvc-test`
+Spring Boot 4 introduces `spring-boot-starter-webmvc-test` for `@WebMvcTest`-style tests. The convention plugins (`khezy.springboot-library`, `khezy.springboot`) and `api-audit` already use it. **Do not** use the old `spring-boot-starter-test` for web MVC tests.
+
+### `spring.factories` for Spring Security
+`spring.factories` is still used for Spring Security's `AbstractHttpConfigurer` registration (see `rest-api/api-security/src/main/resources/META-INF/spring.factories`). This is **not** the auto-configuration file — auto-configuration uses `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+
 ## Module Recipe
 
 New module `settings.gradle`:
@@ -152,7 +175,6 @@ Module READMEs should follow the KHEZY mission (`about/khezy-mission-vision.md`)
 - **Never say "without understanding X"** — be honest about what concepts the developer still needs to learn
 - **Mention what the library does NOT do** — sets clear boundaries, avoids overpromising
 - **Define who it's for** — beginners (working infrastructure without 200 pages of reference), experienced devs (skip boilerplate), bootstrap projects (MVP in a sprint)
-- **Mention Spring Boot 4 inspiration where applicable** — e.g., MFA features are inspired by Spring Boot 4 patterns not yet available in Spring Boot 3
 
 ## Spring Security Gotchas (critical)
 

@@ -2,15 +2,13 @@ package io.github.khezyapp.examples.security.custom;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -23,11 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SecurityCustomizationApplicationTests {
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    @LocalServerPort
+    private int port;
+
+    private RestTestClient restTemplate;
 
     @Value("${khezy.api.security.jwt.secret}")
     private String jwtSecret;
+
+    @BeforeEach
+    void setUp() {
+        restTemplate = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .build();
+    }
 
     @Test
     void contextLoads() {
@@ -35,62 +42,72 @@ class SecurityCustomizationApplicationTests {
 
     @Test
     void shouldReturnCustom401FormatWhenNoToken() {
-        final var response = restTemplate.getForEntity("/secure", Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(response.getBody()).containsEntry("error", "unauthorized");
-        assertThat(response.getBody()).containsEntry("message", "Custom message authentication required");
+        restTemplate.get()
+                .uri("/secure")
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.UNAUTHORIZED)
+                .expectBody(Map.class)
+                .value(body -> {
+                    assertThat(body).containsEntry("error", "unauthorized");
+                    assertThat(body).containsEntry("message", "Custom message authentication required");
+                });
     }
 
     @Test
     void shouldAcceptCustomXAuthTokenHeader() {
         final var token = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"), "mfa_claims");
-        final var headers = new HttpHeaders();
-        headers.set("X-Auth-Token", token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsEntry("message", "Access granted to user");
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK)
+                .expectBody(Map.class)
+                .value(body -> assertThat(body).containsEntry("message", "Access granted to user"));
     }
 
     @Test
     void shouldFallbackToBearerWhenNoXAuthToken() {
         final var token = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"), "mfa_claims");
-        final var headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK);
     }
 
     @Test
     void shouldReturnCustom403FormatWhenMfaMissing() {
         final var token = generateToken("user", List.of("ROLE_USER"),
                 List.of("password"), "mfa_claims");
-        final var headers = new HttpHeaders();
-        headers.set("X-Auth-Token", token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getBody()).containsEntry("error", "access_denied");
-        assertThat(response.getBody()).containsEntry("path", "/secure");
-        assertThat(response.getBody()).containsKey("timestamp");
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN)
+                .expectBody(Map.class)
+                .value(body -> {
+                    assertThat(body).containsEntry("error", "access_denied");
+                    assertThat(body).containsEntry("path", "/secure");
+                    assertThat(body).containsKey("timestamp");
+                });
     }
 
     @Test
     void shouldUseCustomMfaClaimName() {
         final var token = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"), "mfa_claims");
-        final var headers = new HttpHeaders();
-        headers.set("X-Auth-Token", token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK);
     }
 
     @Test
@@ -104,32 +121,35 @@ class SecurityCustomizationApplicationTests {
                 .signWith(Keys.hmacShaKeyFor(
                         jwtSecret.getBytes(StandardCharsets.UTF_8)))
                 .compact();
-        final var headers = new HttpHeaders();
-        headers.set("X-Auth-Token", token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
     void fullMfaFlowWithCustomComponents() {
         final var pwToken = generateToken("user", List.of("ROLE_USER"),
                 List.of("password"), "mfa_claims");
-        final var pwHeaders = new HttpHeaders();
-        pwHeaders.set("X-Auth-Token", pwToken);
-        final var pwResponse = restTemplate.exchange(
-                "/secure", HttpMethod.GET, new HttpEntity<>(pwHeaders), Map.class);
-        assertThat(pwResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(pwResponse.getBody()).containsEntry("error", "access_denied");
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", pwToken)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN)
+                .expectBody(Map.class)
+                .value(body -> assertThat(body).containsEntry("error", "access_denied"));
 
         final var mfaToken = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"), "mfa_claims");
-        final var mfaHeaders = new HttpHeaders();
-        mfaHeaders.set("X-Auth-Token", mfaToken);
-        final var mfaResponse = restTemplate.exchange(
-                "/secure", HttpMethod.GET, new HttpEntity<>(mfaHeaders), Map.class);
-        assertThat(mfaResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        restTemplate.get()
+                .uri("/secure")
+                .header("X-Auth-Token", mfaToken)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK);
     }
 
     private String generateToken(final String username,

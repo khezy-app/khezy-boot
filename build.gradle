@@ -29,3 +29,17 @@ tasks.register('checkstyleTests') {
         dependsOn included.task(':checkstyleTest')
     }
 }
+
+tasks.register('unittest') {
+    group = 'verification'
+    description = 'Runs tests on the root project and all included builds.'
+
+    def targetBuilds = gradle.includedBuilds.findAll { build ->
+        !build.projectDir.absolutePath.contains("/examples/") &&
+                build.name != 'build-logic'
+    }
+
+    targetBuilds.each { included ->
+        dependsOn included.task(':test')
+    }
+}

@@ -16,7 +16,8 @@ import java.util.function.Supplier;
  * Custom expression root that defines the DSL available within SpEL security expressions.
  * Extends standard Spring Security operations with domain-specific utilities and rule-based checks.
  */
-public class KhezySecurityExpressionRoot extends SecurityExpressionRoot implements MethodSecurityExpressionOperations {
+public class KhezySecurityExpressionRoot<T> extends SecurityExpressionRoot<T>
+        implements MethodSecurityExpressionOperations {
 
     private Object filterObject;
     private Object returnObject;
@@ -35,11 +36,12 @@ public class KhezySecurityExpressionRoot extends SecurityExpressionRoot implemen
     private AuthorizationRuleRegistry authorizationRuleRegistry;
 
     public KhezySecurityExpressionRoot(final Authentication authentication) {
-        super(authentication);
+        super(() -> authentication, null);
     }
 
-    public KhezySecurityExpressionRoot(final Supplier<Authentication> authentication) {
-        super(authentication);
+    public KhezySecurityExpressionRoot(final Supplier<? extends Authentication> authentication,
+                                       final T object) {
+        super(authentication, object);
     }
 
     @Override

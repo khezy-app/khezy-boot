@@ -11,11 +11,12 @@ import jakarta.persistence.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.util.ProxyUtils;
+import tools.jackson.databind.module.SimpleModule;
 
 import java.util.Collections;
 
@@ -57,7 +58,7 @@ public class KhezyAuditDataConfiguration {
     }
 
     /**
-     * Customizes the Jackson {@link com.fasterxml.jackson.databind.ObjectMapper} to include the audit metadata mixin.
+     * Customizes the Jackson {@link tools.jackson.databind.ObjectMapper} to include the audit metadata mixin.
      * <p>
      * This ensures that {@link AuditMetadata} instances are serialized according to
      * the rules defined in {@link AuditMetadataJsonMixin}.
@@ -66,9 +67,12 @@ public class KhezyAuditDataConfiguration {
      * @return a customizer for the Jackson builder
      */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer auditMixinCustomizer() {
-        return builder ->
-                builder.mixIn(AuditMetadata.class, AuditMetadataJsonMixin.class)
-                        .serializerByType(Throwable.class, new AuditThrowableSerializer());
+    public JsonMapperBuilderCustomizer auditMixinCustomizer() {
+        return builder -> {
+            builder.addMixIn(AuditMetadata.class, AuditMetadataJsonMixin.class);
+            final var auditModule = new SimpleModule("AuditModule");
+            auditModule.addSerializer(Throwable.class, new AuditThrowableSerializer());
+            builder.addModule(auditModule);
+        };
     }
 }

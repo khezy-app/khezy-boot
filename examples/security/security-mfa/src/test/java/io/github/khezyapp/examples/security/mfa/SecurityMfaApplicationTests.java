@@ -2,15 +2,14 @@ package io.github.khezyapp.examples.security.mfa;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -23,11 +22,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SecurityMfaApplicationTests {
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    @LocalServerPort
+    private int port;
+
+    private RestTestClient restTemplate;
 
     @Value("${khezy.api.security.jwt.secret}")
     private String jwtSecret;
+
+    @BeforeEach
+    void setUp() {
+        restTemplate = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .build();
+    }
 
     @Test
     void contextLoads() {
@@ -35,83 +43,98 @@ class SecurityMfaApplicationTests {
 
     @Test
     void shouldReturn401WhenNoToken() {
-        final var response = restTemplate.getForEntity("/secure", String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        restTemplate.get()
+                .uri("/secure")
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     void shouldReturn403WhenMissingRequiredFactor() {
         final var token = generateToken("user", List.of("ROLE_USER"), List.of("password"));
-        final var headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getBody()).containsEntry("requiredMFA", true);
-        assertThat(response.getBody()).containsEntry("mfaMethod", "webauthn");
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN)
+                .expectBody(Map.class)
+                .value(body -> {
+                    assertThat(body).containsEntry("requiredMFA", true);
+                    assertThat(body).containsEntry("mfaMethod", "webauthn");
+                });
     }
 
     @Test
     void shouldReturn200WhenAllFactorsPresent() {
         final var token = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"));
-        final var headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsEntry("message", "Access granted to user");
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK)
+                .expectBody(Map.class)
+                .value(body -> assertThat(body).containsEntry("message", "Access granted to user"));
     }
 
     @Test
     void shouldReturn403WhenOnlyWebauthnFactorMissing() {
         final var token = generateToken("user", List.of("ROLE_USER"), List.of("webauthn"));
-        final var headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        final var request = new HttpEntity<>(headers);
-        final var response = restTemplate.exchange(
-                "/secure", HttpMethod.GET, request, Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getBody()).containsEntry("requiredMFA", true);
-        assertThat(response.getBody()).containsEntry("mfaMethod", "password");
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN)
+                .expectBody(Map.class)
+                .value(body -> {
+                    assertThat(body).containsEntry("requiredMFA", true);
+                    assertThat(body).containsEntry("mfaMethod", "password");
+                });
     }
 
     @Test
     void fullFlowPasswordThenMfaThenAccess() {
         final var pwToken = generateToken("user", List.of("ROLE_USER"), List.of("password"));
-        final var pwHeaders = new HttpHeaders();
-        pwHeaders.setBearerAuth(pwToken);
-        final var pwResponse = restTemplate.exchange(
-                "/secure", HttpMethod.GET, new HttpEntity<>(pwHeaders), Map.class);
-        assertThat(pwResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(pwResponse.getBody()).containsEntry("requiredMFA", true);
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + pwToken)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.FORBIDDEN)
+                .expectBody(Map.class)
+                .value(body -> assertThat(body).containsEntry("requiredMFA", true));
 
         final var mfaToken = generateToken("user", List.of("ROLE_USER"),
                 List.of("password", "webauthn"));
-        final var mfaHeaders = new HttpHeaders();
-        mfaHeaders.setBearerAuth(mfaToken);
-        final var mfaResponse = restTemplate.exchange(
-                "/secure", HttpMethod.GET, new HttpEntity<>(mfaHeaders), Map.class);
-        assertThat(mfaResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        restTemplate.get()
+                .uri("/secure")
+                .header("Authorization", "Bearer " + mfaToken)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK);
     }
 
     @Test
     void shouldGenerateTokenFromAuthEndpoint() {
-        final var body = Map.<String, Object>of(
-                "username", "user",
-                "factors", List.of("password", "webauthn")
-        );
-        final var request = new HttpEntity<>(body);
-        final var response = restTemplate.postForEntity(
-                "/auth/token", request, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsKey("token");
-        assertThat(response.getBody()).containsKey("factors");
+        restTemplate.post()
+                .uri("/auth/token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.<String, Object>of(
+                        "username", "user",
+                        "factors", List.of("password", "webauthn")
+                ))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.OK)
+                .expectBody(Map.class)
+                .value(body -> {
+                    assertThat(body).containsKey("token");
+                    assertThat(body).containsKey("factors");
+                });
     }
 
     private String generateToken(final String username,
