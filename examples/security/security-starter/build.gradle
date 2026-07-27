@@ -8,5 +8,4 @@ description = 'Plug-and-play JWT security with the KHEZY starter'
 
 dependencies {
     implementation "${group}:api-security-spring-boot-starter"
-    implementation 'org.springframework.boot:spring-boot-starter-web'
 }

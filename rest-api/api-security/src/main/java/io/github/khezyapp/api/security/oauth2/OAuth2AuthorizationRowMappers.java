@@ -34,7 +34,8 @@ public class OAuth2AuthorizationRowMappers {
      * @return the encrypting parameter mapper
      */
     public OAuth2AuthorizationParameterMapper getParameterMapper() {
-        final var defaultParameterMapper = new JdbcOAuth2AuthorizationService.OAuth2AuthorizationParametersMapper();
+        final var defaultParameterMapper = new JdbcOAuth2AuthorizationService
+                .JsonMapperOAuth2AuthorizationParametersMapper();
         return authorization -> {
             final var builder = OAuth2Authorization.from(authorization);
 
@@ -80,7 +81,7 @@ public class OAuth2AuthorizationRowMappers {
      * @return the decrypting row mapper
      */
     public RowMapper<OAuth2Authorization> getRowMapper() {
-        final var defaultRowMapper = new JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper(
+        final var defaultRowMapper = new JdbcOAuth2AuthorizationService.JsonMapperOAuth2AuthorizationRowMapper(
                 registeredClientRepository
         );
         return (rs, rowNum) -> {

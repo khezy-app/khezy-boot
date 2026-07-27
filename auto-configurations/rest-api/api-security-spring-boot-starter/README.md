@@ -7,7 +7,7 @@ library. Drop it in and everything wires automatically.
 
 ```groovy
 dependencies {
-    implementation 'io.github.khezyapp:api-security-spring-boot-starter:1.0.0'
+    implementation 'io.github.khezyapp:api-security-spring-boot-starter:2.0.0'
 }
 ```
 
@@ -421,7 +421,7 @@ AccessDeniedHandler customAccessDeniedHandler() {
 ## Requirements
 
 - Java 17+
-- Spring Boot 3.x
+- Spring Boot 4.x
 
 ## Build
 

@@ -3,7 +3,6 @@ package io.github.khezyapp.api.security.authz;
 import io.github.khezyapp.api.security.authority.RequiredFactorAuthoritiesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
-import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
@@ -29,23 +28,13 @@ public class RequiredFactorAuthorityAuthorization<T> implements AuthorizationMan
     private final List<String> globalMFAuthorities;
 
     /**
-     * Casts the result of {@link #authorize(Supplier, Object)} to an
-     * {@link AuthorizationDecision}.
-     */
-    @Override
-    public AuthorizationDecision check(final Supplier<Authentication> authentication,
-                                       final T object) {
-        return (AuthorizationDecision) authorize(authentication, object);
-    }
-
-    /**
      * Verifies the user is authenticated, then checks that all required multi-factor
      * authorities (per-user and global) are present in the current grant.
      *
      * @return a {@link RequiredFactorAuthorityDecision} listing any missing authorities
      */
     @Override
-    public AuthorizationResult authorize(final Supplier<Authentication> authentication,
+    public AuthorizationResult authorize(final Supplier<? extends Authentication> authentication,
                                          final T object) {
         final var authenticatedResult = authenticated.authorize(authentication, object);
         if (Objects.nonNull(authenticatedResult) && !authenticatedResult.isGranted()) {

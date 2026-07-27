@@ -3,14 +3,14 @@ plugins {
 }
 
 group = "io.github.khezyapp"
-version = "1.0.1"
+version = "2.0.0"
 
 ext {
     jjwtVersion = "0.13.0"
 }
 
 dependencies {
-    api "io.github.khezyapp:api-exception:1.0.0"
+    api "io.github.khezyapp:api-exception:2.0.0"
 
     api 'org.springframework.boot:spring-boot-starter-validation'
     api 'io.micrometer:micrometer-tracing-bridge-brave'

@@ -1,6 +1,5 @@
 package io.github.khezyapp.api.security.autoconfigure.error;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.khezyapp.api.security.authn.RestApiAuthenticationEntryPoint;
 import io.github.khezyapp.api.security.authz.RestApiAccessDeniedHandler;
 import io.github.khezyapp.api.security.autoconfigure.KhezyErrorHandlingAutoConfiguration;
@@ -12,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -27,7 +27,7 @@ import java.util.ArrayList;
  */
 @AutoConfiguration
 @AutoConfigureAfter(
-        name = "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
+        name = "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration"
 )
 public class KhezyRowLevelSecurityAutoConfiguration {
 

@@ -23,7 +23,7 @@ public class FactorAppendingConfigurer extends AbstractHttpConfigurer<FactorAppe
      * the {@link HttpSecurity} instance.
      */
     @Override
-    public void init(final HttpSecurity http) throws Exception {
+    public void init(final HttpSecurity http) {
         log.info("Initializing FactorAppendingConfigurer: Appending custom multi-factor authentication steps.");
 
         final var context = http.getSharedObject(ApplicationContext.class);

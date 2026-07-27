@@ -1,10 +1,10 @@
 package io.github.khezyapp.api.audit.mixin;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class AuditThrowableSerializer extends StdSerializer<Throwable> {
@@ -16,7 +16,7 @@ public class AuditThrowableSerializer extends StdSerializer<Throwable> {
     @Override
     public void serialize(final Throwable value,
                           final JsonGenerator gen,
-                          final SerializerProvider serializerProvider) throws IOException {
+                          final SerializationContext ctxt) throws JacksonException {
         if (Objects.isNull(value)) {
             gen.writeNull();
             return;
@@ -24,10 +24,10 @@ public class AuditThrowableSerializer extends StdSerializer<Throwable> {
 
         gen.writeStartObject();
 
-        gen.writeStringField("type", value.getClass().getName());
-        gen.writeStringField("message", value.getMessage());
+        gen.writeStringProperty("type", value.getClass().getName());
+        gen.writeStringProperty("message", value.getMessage());
         if (Objects.nonNull(value.getCause())) {
-            gen.writeStringField("cause", value.getCause().getMessage());
+            gen.writeStringProperty("cause", value.getCause().getMessage());
         }
 
         gen.writeEndObject();

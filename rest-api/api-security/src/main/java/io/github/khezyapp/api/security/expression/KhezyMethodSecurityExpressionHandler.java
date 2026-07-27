@@ -28,6 +28,19 @@ public class KhezyMethodSecurityExpressionHandler extends DefaultMethodSecurityE
     }
 
     /**
+     * Overrides the standard context creation to inject custom root and evaluation context.
+     * Ensures parameters like {@code #id} are discoverable in expressions.
+     */
+    @Override
+    public EvaluationContext createEvaluationContext(final Supplier<? extends Authentication> authentication,
+                                                     final MethodInvocation mi) {
+        final var root = createSecurityExpressionRoot(authentication, mi);
+        final var context = new CustomMethodSecurityEvaluationContext(root, mi, getParameterNameDiscoverer());
+        context.setBeanResolver(getBeanResolver());
+        return context;
+    }
+
+    /**
      * Internal factory method that assembles the custom expression root and populates
      * it with HTTP request data and enriched attributes.
      */
@@ -39,29 +52,15 @@ public class KhezyMethodSecurityExpressionHandler extends DefaultMethodSecurityE
         return createSecurityExpressionRoot(() -> authentication, invocation);
     }
 
-    /**
-     * Overrides the standard context creation to inject custom root and evaluation context.
-     * Ensures parameters like {@code #id} are discoverable in expressions.
-     */
-    @Override
-    public EvaluationContext createEvaluationContext(final Supplier<Authentication> authentication,
-                                                     final MethodInvocation mi) {
-        final var root = createSecurityExpressionRoot(authentication, mi);
-        final var context = new CustomMethodSecurityEvaluationContext(root, mi, getParameterNameDiscoverer());
-        context.setBeanResolver(getBeanResolver());
-        return context;
-    }
-
     private MethodSecurityExpressionOperations createSecurityExpressionRoot(
-            final Supplier<Authentication> authentication,
+            final Supplier<? extends Authentication> authentication,
             final MethodInvocation invocation
     ) {
-        final var root = new KhezySecurityExpressionRoot(authentication);
+        final var root = new KhezySecurityExpressionRoot<>(authentication, invocation);
         root.setThis(invocation.getThis());
         root.setPermissionEvaluator(getPermissionEvaluator());
-        root.setTrustResolver(getTrustResolver());
-        root.setRoleHierarchy(getRoleHierarchy());
-        root.setDefaultRolePrefix(getDefaultRolePrefix());
+        root.setAuthorizationManagerFactory(getAuthorizationManagerFactory());
+        root.setPermissionEvaluator(getPermissionEvaluator());
         root.setAuthorizationRuleRegistry(authorizationRuleRegistry);
 
         final var requestAttribute = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

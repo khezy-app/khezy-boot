@@ -17,6 +17,7 @@ import static org.mockito.Mockito.*;
 
 class AuthenticationBuilderManagerTest {
 
+    @SuppressWarnings("unchecked")
     @Test
     void shouldFindMatchingFactoryAndApplyBuilder() {
         final var auth = UsernamePasswordAuthenticationToken.unauthenticated("user", "pass");
@@ -62,6 +63,7 @@ class AuthenticationBuilderManagerTest {
         assertThat(result).isNull();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void shouldTryFactoriesInOrder() {
         final var auth = UsernamePasswordAuthenticationToken.unauthenticated("user", "pass");

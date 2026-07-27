@@ -125,7 +125,7 @@ class RequiredFactorAuthorityAuthorizationTest {
         when(auth.isAuthenticated()).thenReturn(false);
 
         final var authz = new RequiredFactorAuthorityAuthorization<>(null, List.of());
-        final var result = authz.check(() -> auth, null);
+        final var result = authz.authorize(() -> auth, null);
 
         assertThat(result).isNotNull();
         assertThat(result.isGranted()).isFalse();
