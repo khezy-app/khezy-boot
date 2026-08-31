@@ -1,0 +1,35 @@
+plugins {
+    id("khezy.java-library")
+    id("khezy.java-use-mockito")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    springAiVersion = '2.0.1'
+    aiElementsModelVersion = '1.0.0'
+    springFrameworkVersion = '7.0.9'
+    jakartaServletVersion = '6.1.0'
+    springBootTestVersion = '4.1.0'
+    reactorTestVersion = '3.8.6'
+}
+
+dependencies {
+    api "io.github.khezyapp:ai-elements-model:${aiElementsModelVersion}"
+    api "org.springframework.ai:spring-ai-client-chat:${springAiVersion}"
+    api "org.springframework:spring-webmvc:${springFrameworkVersion}"
+    api "jakarta.servlet:jakarta.servlet-api:${jakartaServletVersion}"
+    testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootTestVersion}"
+    testImplementation "io.projectreactor:reactor-test:${reactorTestVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy AI Elements Spring AI"
+        description = """
+        Ports Spring AI to the ai-elements (AI SDK UI message stream) protocol:
+        converts Spring AI messages and streams into ai-elements models and typed
+        SSE events, with writer helpers for both servlet (SseEmitter) and WebFlux."""
+    }
+}

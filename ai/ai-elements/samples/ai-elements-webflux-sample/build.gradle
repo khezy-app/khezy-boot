@@ -1,0 +1,31 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Runnable WebFlux demo of the ai-elements Spring AI integration'
+
+ext {
+    springAiVersion = '2.0.1'
+}
+
+dependencies {
+    implementation("io.github.khezyapp:ai-elements-spring-ai:1.0.0") {
+        exclude group: 'org.springframework', module: 'spring-webmvc'
+        exclude group: 'jakarta.servlet', module: 'jakarta.servlet-api'
+    }
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.ai:spring-ai-starter-model-deepseek'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+}
+
+configurations.all {
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-webmvc'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}

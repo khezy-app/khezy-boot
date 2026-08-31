@@ -107,6 +107,15 @@ Spring Boot 4 ships Jackson 3.x. The `ObjectMapper` and serialization APIs moved
 ### `spring-boot-starter-webmvc-test`
 Spring Boot 4 introduces `spring-boot-starter-webmvc-test` for `@WebMvcTest`-style tests. The convention plugins (`khezy.springboot-library`, `khezy.springboot`) and `api-audit` already use it. **Do not** use the old `spring-boot-starter-test` for web MVC tests.
 
+### Spring Boot 4 MockMvc test annotations moved packages
+In Spring Boot 4.1.0 the servlet test autoconfigure support moved out of `spring-boot-test-autoconfigure` into a new `spring-boot-webmvc-test` module, so the annotations changed package:
+- `@AutoConfigureMockMvc` and `@WebMvcTest` now live in `org.springframework.boot.webmvc.test.autoconfigure` (NOT `org.springframework.boot.test.autoconfigure.web.servlet`).
+- `org.springframework.boot.test.autoconfigure` in 4.1.0 contains only a handful of classes (json/jdbc); `AutoConfigureMockMvc`/`WebMvcTest` are NOT there.
+- The static `MockMvc` helper `asyncDispatch(MvcResult)` is NOT a method on `MockMvc`. It is a static method of `org.springframework.test.web.servlet.request.MockMvcRequestBuilders` — import it statically: `import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;`.
+
+### `AiElementsSse.writeTo` must append the `[DONE]` sentinel
+The servlet `SseEmitter` overloads of `AiElementsSse.writeTo(...)` must send a `data:[DONE]` frame before calling `emitter.complete()`. Without it, the SSE stream never terminates with the AI SDK's end-of-stream sentinel and the client hangs waiting for more events. Fix lives in `ai-elements-spring-ai/.../sse/AiElementsSse.java`.
+
 ### `spring.factories` for Spring Security
 `spring.factories` is still used for Spring Security's `AbstractHttpConfigurer` registration (see `rest-api/api-security/src/main/resources/META-INF/spring.factories`). This is **not** the auto-configuration file — auto-configuration uses `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
