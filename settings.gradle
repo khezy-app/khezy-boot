@@ -22,3 +22,11 @@ includeBuild("examples/security/security-context-enrichment")
 includeBuild("examples/security/security-row-level")
 includeBuild("examples/security/security-mfa")
 includeBuild("examples/security/security-customization")
+
+includeBuild("ai/a2a/a2a-core")
+includeBuild("ai/a2a/a2a-core-default")
+includeBuild("ai/a2a/a2a-spring-ai")
+includeBuild("ai/a2a/a2a-spring-boot-starter")
+
+includeBuild("ai/a2a/samples/a2a-server-sample")
+includeBuild("ai/a2a/samples/a2a-client-sample")

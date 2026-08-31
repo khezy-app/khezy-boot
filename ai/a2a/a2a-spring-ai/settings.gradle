@@ -1,0 +1,5 @@
+pluginManagement {
+    includeBuild("../../../build-logic")
+}
+includeBuild("../a2a-core")
+rootProject.name = "a2a-spring-ai"

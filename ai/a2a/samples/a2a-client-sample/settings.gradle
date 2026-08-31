@@ -1,0 +1,6 @@
+pluginManagement {
+    includeBuild("../../../../build-logic")
+}
+includeBuild("../../../../ai/a2a/a2a-core")
+includeBuild("../../../../ai/a2a/a2a-core-default")
+rootProject.name = "a2a-client-sample"

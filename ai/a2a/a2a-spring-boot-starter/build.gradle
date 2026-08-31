@@ -1,0 +1,34 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    a2aCoreVersion = '1.0.0'
+    a2aCoreDefaultVersion = '1.0.0'
+    a2aSdkVersion = "1.2.0.Final"
+}
+
+dependencies {
+    api "io.github.khezyapp:a2a-core:${a2aCoreVersion}"
+    api "io.github.khezyapp:a2a-core-default:${a2aCoreDefaultVersion}"
+
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation "org.a2aproject.sdk:a2a-java-sdk-client:${a2aSdkVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-jsonrpc-common:${a2aSdkVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-spec-grpc:${a2aSdkVersion}"
+
+    compileOnly 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security'
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy A2A Spring Boot Starter"
+        description = """
+        Spring Boot starter for the A2A contract layer: auto-configuration, JSON-RPC
+        HTTP endpoints and caller-identity propagation over Spring Security."""
+    }
+}

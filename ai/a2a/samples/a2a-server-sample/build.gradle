@@ -1,0 +1,11 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'A2A math agent server validating the KHEZY A2A starter'
+
+dependencies {
+    implementation "${group}:a2a-spring-boot-starter"
+}

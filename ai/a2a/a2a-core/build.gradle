@@ -1,0 +1,23 @@
+plugins {
+    id("khezy.java-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    a2aSdkVersion = "1.2.0.Final"
+}
+
+dependencies {
+    api "org.a2aproject.sdk:a2a-java-sdk-spec:${a2aSdkVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy A2A Core"
+        description = """
+        Port interfaces for the A2A contract layer: execution, dispatch, persistence,
+        client calls and identity, typed on the official A2A Java SDK spec model."""
+    }
+}
