@@ -1,0 +1,3 @@
+io.github.khezyapp.a2a.starter.A2AAutoConfiguration
+io.github.khezyapp.a2a.starter.A2AClientAutoConfiguration
+io.github.khezyapp.a2a.starter.web.A2AWebAutoConfiguration

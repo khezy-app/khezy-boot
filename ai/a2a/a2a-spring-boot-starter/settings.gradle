@@ -1,0 +1,6 @@
+pluginManagement {
+    includeBuild("../../../build-logic")
+}
+includeBuild("../a2a-core")
+includeBuild("../a2a-core-default")
+rootProject.name = "a2a-spring-boot-starter"

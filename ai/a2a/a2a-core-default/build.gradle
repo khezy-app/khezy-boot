@@ -1,0 +1,27 @@
+plugins {
+    id("khezy.java-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    a2aCoreVersion = '1.0.0'
+    a2aSdkVersion = "1.2.0.Final"
+}
+
+dependencies {
+    api "io.github.khezyapp:a2a-core:${a2aCoreVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-spec:${a2aSdkVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-client:${a2aSdkVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-client-transport-jsonrpc:${a2aSdkVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy A2A Core Default"
+        description = """
+        Default implementations of the A2A core ports: in-memory task store and event
+        queue, a task lifecycle dispatcher, and the SDK-client-based remote agent client."""
+    }
+}

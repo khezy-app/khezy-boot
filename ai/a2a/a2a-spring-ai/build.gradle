@@ -1,0 +1,26 @@
+plugins {
+    id("khezy.java-library")
+    id("khezy.java-use-mockito")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    a2aCoreVersion = '1.0.0'
+    springAiVersion = '2.0.1'
+}
+
+dependencies {
+    api "io.github.khezyapp:a2a-core:${a2aCoreVersion}"
+    implementation "org.springframework.ai:spring-ai-client-chat:${springAiVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy A2A Spring AI"
+        description = """
+        Optional Spring AI integration for the A2A contract layer: adapts a ChatClient
+        into an A2A agent executor."""
+    }
+}
