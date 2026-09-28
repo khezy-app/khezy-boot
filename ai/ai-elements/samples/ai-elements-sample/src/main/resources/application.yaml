@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: ai-elements-sample
+  profiles:
+    active: mock
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      model: deepseek-v4-flash

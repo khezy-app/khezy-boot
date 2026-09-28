@@ -1,0 +1,15 @@
+{"type":"start","messageId":"msg_auth_001"}
+{"type":"start-step"}
+{"type":"reasoning-start","id":"reason_0"}
+{"type":"reasoning-delta","id":"reason_0","delta":"The user wants to add authentication to the Spring Boot app. Let me first understand the current project structure, then plan the implementation."}
+{"type":"reasoning-end","id":"reason_0"}
+{"type":"tool-input-start","toolCallId":"call_read_1","toolName":"read_file"}
+{"type":"tool-output-available","toolCallId":"call_read_1","output":{"path":"build.gradle","success":true}}
+{"type":"finish-step"}
+{"type":"start-step"}
+{"type":"text-start","id":"text_0"}
+{"type":"text-delta","id":"text_0","delta":"I've analyzed the project. Here is my plan:\n"}
+{"type":"text-delta","id":"text_0","delta":"1. Add Spring Security, 2. Create the security config, 3. Wire the JWT filter.\n"}
+{"type":"text-end","id":"text_0"}
+{"type":"finish-step"}
+{"type":"finish","finishReason":"stop","usage":{"inputTokens":1250,"outputTokens":890,"totalTokens":2140}}

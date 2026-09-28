@@ -1,0 +1,23 @@
+plugins {
+    id 'khezy.springboot'
+}
+
+group = 'io.github.khezyapp'
+version = '0.0.1-SNAPSHOT'
+description = 'Runnable servlet demo of the ai-elements Spring AI integration'
+
+ext {
+    springAiVersion = '2.0.1'
+}
+
+dependencies {
+    implementation "io.github.khezyapp:ai-elements-spring-ai:1.0.0"
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.ai:spring-ai-starter-model-deepseek'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}

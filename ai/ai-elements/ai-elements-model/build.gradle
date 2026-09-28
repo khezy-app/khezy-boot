@@ -1,0 +1,30 @@
+plugins {
+    id("khezy.java-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    // Aligned with what Spring Boot 4 / Jackson 3 (tools.jackson.core:jackson-databind)
+    // resolve. Jackson 3 kept the annotations namespace/artifact un-moved, so this
+    // shared artifact must match the Boot-4 graph to avoid version skew. The
+    // annotations artifact versions as bare 2.21; databind uses patch versions.
+    jacksonAnnotationsVersion = "2.21"
+    jacksonDatabindVersion = "2.21.4"
+}
+
+dependencies {
+    api "com.fasterxml.jackson.core:jackson-annotations:${jacksonAnnotationsVersion}"
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy AI Elements Model"
+        description = """
+        Pure wire-protocol records for the ai-elements (AI SDK UI message stream)
+        integration: request models, typed SSE events, finish reasons and usage.
+        No Spring dependencies."""
+    }
+}

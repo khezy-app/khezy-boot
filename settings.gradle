@@ -30,3 +30,8 @@ includeBuild("ai/a2a/a2a-spring-boot-starter")
 
 includeBuild("ai/a2a/samples/a2a-server-sample")
 includeBuild("ai/a2a/samples/a2a-client-sample")
+
+includeBuild("ai/ai-elements/ai-elements-model")
+includeBuild("ai/ai-elements/ai-elements-spring-ai")
+includeBuild("ai/ai-elements/samples/ai-elements-sample")
+includeBuild("ai/ai-elements/samples/ai-elements-webflux-sample")

@@ -1,0 +1,6 @@
+pluginManagement {
+    includeBuild("../../../../build-logic")
+}
+includeBuild("../../ai-elements-model")
+includeBuild("../../ai-elements-spring-ai")
+rootProject.name = "ai-elements-sample"
