@@ -7,20 +7,16 @@ import com.fasterxml.jackson.annotation.JsonTypeId;
 import java.util.Map;
 
 /**
- * A reasoning (chain-of-thought) part of a chat message. {@code text} carries the
- * reasoning; {@code state} is {@code "streaming"} or {@code "done"}.
+ * A part referencing a document source used when producing the message.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ReasoningPart(
+public record SourceDocumentPart(
         @JsonTypeId String type,
-        String id,
-        String text,
-        String state,
+        String sourceId,
+        String mediaType,
+        String title,
+        String filename,
         Map<String, Object> providerMetadata
 ) implements MessagePart {
-
-    public ReasoningPart(final String type, final String text) {
-        this(type, null, text, null, null);
-    }
 }

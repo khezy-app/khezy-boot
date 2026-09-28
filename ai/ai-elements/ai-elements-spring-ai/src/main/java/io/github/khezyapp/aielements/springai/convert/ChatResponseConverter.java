@@ -5,7 +5,7 @@ import io.github.khezyapp.aielements.model.common.Usage;
 import io.github.khezyapp.aielements.model.request.ChatMessage;
 import io.github.khezyapp.aielements.model.request.MessagePart;
 import io.github.khezyapp.aielements.model.request.TextPart;
-import io.github.khezyapp.aielements.model.request.ToolInvocationPart;
+import io.github.khezyapp.aielements.model.request.ToolPart;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import tools.jackson.core.JacksonException;
@@ -59,7 +59,8 @@ public final class ChatResponseConverter {
                 usage.getCompletionTokens(),
                 usage.getTotalTokens(),
                 null,
-                toInteger(usage.getCacheReadInputTokens()));
+                toInteger(usage.getCacheReadInputTokens())
+        );
     }
 
     private static Integer toInteger(final Long value) {
@@ -76,7 +77,7 @@ public final class ChatResponseConverter {
 
     /**
      * {@link AssistantMessage} text + tool calls to a {@link List} of {@link MessagePart}
-     * ({@link TextPart} + {@link ToolInvocationPart} with state {@code "call"}).
+     * ({@link TextPart} + a {@link ToolPart} in state {@code "input-available"}).
      */
     public static List<MessagePart> toParts(final AssistantMessage message) {
         final var parts = new ArrayList<MessagePart>();
@@ -85,13 +86,13 @@ public final class ChatResponseConverter {
             parts.add(new TextPart("text", text));
         }
         for (final var toolCall : message.getToolCalls()) {
-            parts.add(new ToolInvocationPart(
-                    "tool-invocation",
+            parts.add(
+                ToolPart.call(
                     toolCall.id(),
                     toolCall.name(),
-                    "call",
-                    parseArgs(toolCall.arguments()),
-                    null));
+                    parseArgs(toolCall.arguments())
+                )
+            );
         }
         return List.copyOf(parts);
     }

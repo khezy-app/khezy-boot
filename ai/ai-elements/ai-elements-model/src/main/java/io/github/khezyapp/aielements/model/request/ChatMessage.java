@@ -1,5 +1,8 @@
 package io.github.khezyapp.aielements.model.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 
 /**
@@ -7,6 +10,8 @@ import java.util.List;
  * {@code "system"}; {@code content} is the legacy plain-text form (may be empty) and
  * {@code parts} is the structured form.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ChatMessage(
         String id,
         String role,

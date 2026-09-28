@@ -10,13 +10,22 @@ import java.util.Objects;
  * a {@code type()} and a minified JSON {@code json()} payload (no {@code data:}
  * prefix); {@link #toWireFormat()} wraps it in the {@code data: ...} framing. The
  * {@code [DONE]} sentinel is produced by {@link #done()}.
+ *
+ * <p>This mirrors the AI SDK UI-message-stream chunk union. Values that the AI SDK
+ * carries as raw JSON (tool input/output, data payloads, metadata) are passed to this
+ * model as pre-serialized JSON strings and embedded unescaped.</p>
  */
 public sealed interface SseEvent permits
         SseEvent.Start, SseEvent.StartStep, SseEvent.TextStart, SseEvent.TextDelta,
         SseEvent.TextEnd, SseEvent.ReasoningStart, SseEvent.ReasoningDelta,
-        SseEvent.ReasoningEnd, SseEvent.SourceUrl, SseEvent.ToolInputStart,
-        SseEvent.ToolInputAvailable, SseEvent.ToolOutputAvailable,
-        SseEvent.FinishStep, SseEvent.Finish, SseEvent.ErrorEvent {
+        SseEvent.ReasoningEnd, SseEvent.SourceUrl, SseEvent.SourceDocument,
+        SseEvent.FileEvent, SseEvent.ReasoningFileEvent, SseEvent.ToolInputStart,
+        SseEvent.ToolInputDelta, SseEvent.ToolInputAvailable, SseEvent.ToolInputError,
+        SseEvent.ToolApprovalRequest, SseEvent.ToolApprovalResponse,
+        SseEvent.ToolOutputAvailable, SseEvent.ToolOutputError,
+        SseEvent.ToolOutputDenied, SseEvent.FinishStep, SseEvent.Finish,
+        SseEvent.MessageMetadata, SseEvent.ResetStep, SseEvent.Custom, SseEvent.DataEvent,
+        SseEvent.Abort, SseEvent.ErrorEvent {
 
     String type();
 
@@ -145,7 +154,56 @@ public sealed interface SseEvent permits
         }
     }
 
-    record ToolInputStart(String toolCallId, String toolName) implements SseEvent {
+    record SourceDocument(String sourceId, String mediaType, String title, String filename)
+            implements SseEvent {
+        @Override
+        public String type() {
+            return "source-document";
+        }
+
+        @Override
+        public String json() {
+            final var filenameField = Objects.nonNull(filename)
+                    ? ",\"filename\":\"" + escape(filename) + "\"" : "";
+            return "{\"type\":\"source-document\",\"sourceId\":\"" + escape(sourceId)
+                    + "\",\"mediaType\":\"" + escape(mediaType)
+                    + "\",\"title\":\"" + escape(title) + "\"" + filenameField + "}";
+        }
+    }
+
+    record FileEvent(String url, String mediaType) implements SseEvent {
+        @Override
+        public String type() {
+            return "file";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"file\",\"url\":\"" + escape(url)
+                    + "\",\"mediaType\":\"" + escape(mediaType) + "\"}";
+        }
+    }
+
+    record ReasoningFileEvent(String url, String mediaType) implements SseEvent {
+        @Override
+        public String type() {
+            return "reasoning-file";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"reasoning-file\",\"url\":\"" + escape(url)
+                    + "\",\"mediaType\":\"" + escape(mediaType) + "\"}";
+        }
+    }
+
+    record ToolInputStart(String toolCallId, String toolName, boolean dynamic)
+            implements SseEvent {
+
+        public ToolInputStart(final String toolCallId, final String toolName) {
+            this(toolCallId, toolName, true);
+        }
+
         @Override
         public String type() {
             return "tool-input-start";
@@ -153,13 +211,34 @@ public sealed interface SseEvent permits
 
         @Override
         public String json() {
+            final var dyn = dynamic ? ",\"dynamic\":true" : "";
             return "{\"type\":\"tool-input-start\",\"toolCallId\":\"" + escape(toolCallId)
-                    + "\",\"toolName\":\"" + escape(toolName) + "\"}";
+                    + "\",\"toolName\":\"" + escape(toolName) + "\"" + dyn + "}";
         }
     }
 
-    record ToolInputAvailable(String toolCallId, String toolName, String inputJson)
-            implements SseEvent {
+    record ToolInputDelta(String toolCallId, String inputTextDelta) implements SseEvent {
+        @Override
+        public String type() {
+            return "tool-input-delta";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"tool-input-delta\",\"toolCallId\":\""
+                    + escape(toolCallId) + "\",\"inputTextDelta\":\""
+                    + escape(inputTextDelta) + "\"}";
+        }
+    }
+
+    record ToolInputAvailable(String toolCallId, String toolName, String input,
+                              boolean dynamic) implements SseEvent {
+
+        public ToolInputAvailable(final String toolCallId, final String toolName,
+                                  final String input) {
+            this(toolCallId, toolName, input, true);
+        }
+
         @Override
         public String type() {
             return "tool-input-available";
@@ -167,13 +246,43 @@ public sealed interface SseEvent permits
 
         @Override
         public String json() {
+            final var dyn = dynamic ? ",\"dynamic\":true" : "";
             return "{\"type\":\"tool-input-available\",\"toolCallId\":\""
                     + escape(toolCallId) + "\",\"toolName\":\"" + escape(toolName)
-                    + "\",\"inputJson\":" + inputJson + "}";
+                    + "\",\"input\":" + input + dyn + "}";
         }
     }
 
-    record ToolOutputAvailable(String toolCallId, String outputJson) implements SseEvent {
+    record ToolInputError(String toolCallId, String toolName, String input,
+                          String errorText, boolean dynamic) implements SseEvent {
+
+        public ToolInputError(final String toolCallId, final String toolName,
+                              final String input, final String errorText) {
+            this(toolCallId, toolName, input, errorText, true);
+        }
+
+        @Override
+        public String type() {
+            return "tool-input-error";
+        }
+
+        @Override
+        public String json() {
+            final var dyn = dynamic ? ",\"dynamic\":true" : "";
+            return "{\"type\":\"tool-input-error\",\"toolCallId\":\""
+                    + escape(toolCallId) + "\",\"toolName\":\"" + escape(toolName)
+                    + "\",\"input\":" + input + ",\"errorText\":\"" + escape(errorText)
+                    + "\"" + dyn + "}";
+        }
+    }
+
+    record ToolOutputAvailable(String toolCallId, String outputJson, boolean dynamic)
+            implements SseEvent {
+
+        public ToolOutputAvailable(final String toolCallId, final String outputJson) {
+            this(toolCallId, outputJson, true);
+        }
+
         @Override
         public String type() {
             return "tool-output-available";
@@ -181,8 +290,69 @@ public sealed interface SseEvent permits
 
         @Override
         public String json() {
+            final var dyn = dynamic ? ",\"dynamic\":true" : "";
             return "{\"type\":\"tool-output-available\",\"toolCallId\":\""
-                    + escape(toolCallId) + "\",\"output\":" + outputJson + "}";
+                    + escape(toolCallId) + "\",\"output\":" + outputJson + dyn + "}";
+        }
+    }
+
+    record ToolOutputError(String toolCallId, String errorText, boolean dynamic)
+            implements SseEvent {
+
+        public ToolOutputError(final String toolCallId, final String errorText) {
+            this(toolCallId, errorText, true);
+        }
+
+        @Override
+        public String type() {
+            return "tool-output-error";
+        }
+
+        @Override
+        public String json() {
+            final var dyn = dynamic ? ",\"dynamic\":true" : "";
+            return "{\"type\":\"tool-output-error\",\"toolCallId\":\""
+                    + escape(toolCallId) + "\",\"errorText\":\"" + escape(errorText)
+                    + "\"" + dyn + "}";
+        }
+    }
+
+    record ToolOutputDenied(String toolCallId) implements SseEvent {
+        @Override
+        public String type() {
+            return "tool-output-denied";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"tool-output-denied\",\"toolCallId\":\""
+                    + escape(toolCallId) + "\"}";
+        }
+    }
+
+    record ToolApprovalRequest(String approvalId, String toolCallId) implements SseEvent {
+        @Override
+        public String type() {
+            return "tool-approval-request";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"tool-approval-request\",\"approvalId\":\""
+                    + escape(approvalId) + "\",\"toolCallId\":\"" + escape(toolCallId) + "\"}";
+        }
+    }
+
+    record ToolApprovalResponse(String approvalId, boolean approved) implements SseEvent {
+        @Override
+        public String type() {
+            return "tool-approval-response";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"tool-approval-response\",\"approvalId\":\""
+                    + escape(approvalId) + "\",\"approved\":" + approved + "}";
         }
     }
 
@@ -206,15 +376,80 @@ public sealed interface SseEvent permits
 
         @Override
         public String json() {
+            if (Objects.isNull(usage)) {
+                // No LLM ran this turn: omit usage entirely so clients can tell "not reported"
+                // apart from a real zero.
+                return "{\"type\":\"finish\",\"finishReason\":\"" + finishReason.value() + "\"}";
+            }
             final var reasoning = Objects.nonNull(usage.reasoningTokens())
                     ? ",\"reasoningTokens\":" + usage.reasoningTokens() : "";
             final var cached = Objects.nonNull(usage.cachedInputTokens())
                     ? ",\"cachedInputTokens\":" + usage.cachedInputTokens() : "";
             return "{\"type\":\"finish\",\"finishReason\":\"" + finishReason.value()
-                    + "\",\"usage\":{\"inputTokens\":" + usage.inputTokens()
+                    + "\",\"messageMetadata\":{\"usage\":{\"inputTokens\":" + usage.inputTokens()
                     + ",\"outputTokens\":" + usage.outputTokens()
                     + ",\"totalTokens\":" + usage.totalTokens()
-                    + reasoning + cached + "}}";
+                    + reasoning + cached + "}}}";
+        }
+    }
+
+    record MessageMetadata(String metadataJson) implements SseEvent {
+        @Override
+        public String type() {
+            return "message-metadata";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"message-metadata\",\"messageMetadata\":" + metadataJson + "}";
+        }
+    }
+
+    record ResetStep() implements SseEvent {
+        @Override
+        public String type() {
+            return "reset-step";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"reset-step\"}";
+        }
+    }
+
+    record Custom(String kind) implements SseEvent {
+        @Override
+        public String type() {
+            return "custom";
+        }
+
+        @Override
+        public String json() {
+            return "{\"type\":\"custom\",\"kind\":\"" + escape(kind) + "\"}";
+        }
+    }
+
+    /**
+     * A provider data chunk. {@code type} is the full wire type ({@code data-<name>}).
+     */
+    record DataEvent(String type, String dataJson) implements SseEvent {
+        @Override
+        public String json() {
+            return "{\"type\":\"" + escape(type) + "\",\"data\":" + dataJson + "}";
+        }
+    }
+
+    record Abort(String reason) implements SseEvent {
+        @Override
+        public String type() {
+            return "abort";
+        }
+
+        @Override
+        public String json() {
+            final var reasonField = Objects.nonNull(reason)
+                    ? ",\"reason\":\"" + escape(reason) + "\"" : "";
+            return "{\"type\":\"abort\"" + reasonField + "}";
         }
     }
 

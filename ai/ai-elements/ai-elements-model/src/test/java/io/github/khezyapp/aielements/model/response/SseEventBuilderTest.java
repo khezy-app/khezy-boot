@@ -34,6 +34,15 @@ class SseEventBuilderTest {
     }
 
     @Test
+    @DisplayName("Should append a tool-output-error event")
+    void toolOutputErrorAppendsEvent() {
+        final var builder = new SseEventBuilder();
+        builder.toolOutputError("t-1", "boom");
+
+        assertEquals(List.of(new SseEvent.ToolOutputError("t-1", "boom")), builder.build());
+    }
+
+    @Test
     @DisplayName("Should concatenate wire format and end with the [DONE] sentinel")
     void buildWireFormatEndsWithDone() {
         final var builder = new SseEventBuilder();
@@ -46,7 +55,8 @@ class SseEventBuilderTest {
                 "data: {\"type\":\"start\",\"messageId\":\"m-1\"}\n\n"
                         + "data: {\"type\":\"finish-step\"}\n\n"
                         + "data: {\"type\":\"finish\",\"finishReason\":\"stop\","
-                        + "\"usage\":{\"inputTokens\":0,\"outputTokens\":0,\"totalTokens\":0}}\n\n"
+                        + "\"messageMetadata\":{\"usage\":{\"inputTokens\":0,\"outputTokens\":0,"
+                        + "\"totalTokens\":0}}}\n\n"
                         + "data: [DONE]\n\n",
                 wire);
     }

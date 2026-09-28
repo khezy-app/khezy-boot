@@ -3,12 +3,14 @@ package io.github.khezyapp.aielements.springai.convert;
 import io.github.khezyapp.aielements.model.request.ChatMessage;
 import io.github.khezyapp.aielements.model.request.FilePart;
 import io.github.khezyapp.aielements.model.request.MessagePart;
+import io.github.khezyapp.aielements.model.request.ReasoningPart;
 import io.github.khezyapp.aielements.model.request.TextPart;
-import io.github.khezyapp.aielements.model.request.ToolInvocationPart;
+import io.github.khezyapp.aielements.model.request.ToolPart;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -37,14 +39,14 @@ import java.util.UUID;
  *
  * <p>Tool results are merged into the assistant message that invoked them: a Spring AI
  * {@link ToolResponseMessage} arriving after an {@link AssistantMessage} flips the
- * matching {@code ToolInvocationPart} from {@code state="call"} to {@code state="result"}
- * and attaches the parsed output, matching the AI-SDK history shape where a call and its
- * result live in one message.</p>
+ * matching {@link ToolPart} to {@code state="output-available"} and attaches the parsed
+ * output, matching the AI SDK UI shape where a call and its result live in one part.</p>
  */
 public final class ChatHistoryConverter {
 
     private static final String ID_METADATA_KEY = "id";
     private static final String MESSAGE_ID_METADATA_KEY = "messageId";
+    private static final String SYNTHETIC_METADATA_KEY = "synthetic";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<Map<String, Object>> ARGS_TYPE =
@@ -63,17 +65,28 @@ public final class ChatHistoryConverter {
         }
         final var result = new ArrayList<ChatMessage>();
         for (final var message : history) {
+            // Framework-generated (compaction summary) messages are internal context: exclude them
+            // from the user-facing history.
+            if (isSynthetic(message)) {
+                continue;
+            }
             if (message instanceof final UserMessage user) {
                 result.add(toUserMessage(user));
             } else if (message instanceof final AssistantMessage assistant) {
                 result.add(toAssistantMessage(assistant));
             } else if (message instanceof final ToolResponseMessage toolResponse) {
                 mergeToolResults(result, toolResponse);
-            } else {
+            } else if (Objects.nonNull(message)) {
                 result.add(toSimpleMessage(message));
             }
         }
         return List.copyOf(result);
+    }
+
+    private static boolean isSynthetic(final Message message) {
+        final var metadata = message.getMetadata();
+        return Objects.nonNull(metadata)
+                && Boolean.TRUE.equals(metadata.get(SYNTHETIC_METADATA_KEY));
     }
 
     /**
@@ -98,27 +111,34 @@ public final class ChatHistoryConverter {
         for (final var media : message.getMedia()) {
             parts.add(new FilePart(
                     "file",
-                    media.getName(),
                     media.getMimeType().toString(),
-                    Base64.getEncoder().encodeToString(media.getDataAsByteArray())));
+                    media.getName(),
+                    toDataUrl(media),
+                    null));
         }
         return new ChatMessage(messageIdOf(message), "user", text, List.copyOf(parts));
+    }
+
+    private static String toDataUrl(final Media media) {
+        final var base64 = Base64.getEncoder().encodeToString(media.getDataAsByteArray());
+        return "data:" + media.getMimeType() + ";base64," + base64;
     }
 
     private static ChatMessage toAssistantMessage(final AssistantMessage message) {
         final var text = message.getText();
         final var parts = new ArrayList<MessagePart>();
+        final var reasoning = ReasoningContent.extract(message);
+        if (Objects.nonNull(reasoning) && !reasoning.isBlank()) {
+            parts.add(new ReasoningPart("reasoning", reasoning));
+        }
         if (Objects.nonNull(text) && !text.isBlank()) {
             parts.add(new TextPart("text", text));
         }
         for (final var toolCall : message.getToolCalls()) {
-            parts.add(new ToolInvocationPart(
-                    "tool-invocation",
+            parts.add(ToolPart.call(
                     toolCall.id(),
                     toolCall.name(),
-                    "call",
-                    parseArgs(toolCall.arguments()),
-                    null));
+                    parseArgs(toolCall.arguments())));
         }
         return new ChatMessage(messageIdOf(message), "assistant", text, List.copyOf(parts));
     }
@@ -157,17 +177,21 @@ public final class ChatHistoryConverter {
         }
         final var updatedParts = new ArrayList<MessagePart>();
         for (final var part : target.parts()) {
-            if (part instanceof final ToolInvocationPart invocation
-                    && "call".equals(invocation.state())) {
-                final var output = findOutput(toolResponse, invocation.toolCallId());
+            if (part instanceof final ToolPart tool && !tool.hasResult()) {
+                final var output = findOutput(toolResponse, tool.toolCallId());
                 if (Objects.nonNull(output)) {
-                    updatedParts.add(new ToolInvocationPart(
-                            invocation.type(),
-                            invocation.toolCallId(),
-                            invocation.toolName(),
-                            "result",
-                            invocation.args(),
-                            output));
+                    updatedParts.add(new ToolPart(
+                            ToolPart.TYPE,
+                            tool.toolName(),
+                            tool.toolCallId(),
+                            ToolPart.STATE_OUTPUT_AVAILABLE,
+                            tool.input(),
+                            output,
+                            null,
+                            tool.providerExecuted(),
+                            tool.title(),
+                            tool.approval(),
+                            tool.toolMetadata()));
                     continue;
                 }
             }

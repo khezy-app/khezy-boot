@@ -58,10 +58,14 @@ public final class ChatResponseStreamConverter {
     private static final class StreamState {
 
         private final String id;
+        private final String reasoningId;
         private boolean textBlockOpen;
+        private boolean reasoningOpen;
+        private String reasoningAccumulated = "";
 
         private StreamState(final String id) {
             this.id = id;
+            this.reasoningId = "reasoning-" + id;
         }
 
         private List<SseEvent> eventsFor(final ChatResponse response) {
@@ -69,8 +73,29 @@ public final class ChatResponseStreamConverter {
             final var generation = response.getResult();
             final var output = generation.getOutput();
 
+            final var reasoning = ReasoningContent.extract(output);
+            final var hasReasoning = Objects.nonNull(reasoning) && !reasoning.isBlank();
             final var text = output.getText();
-            if (Objects.nonNull(text) && !text.isBlank()) {
+            final var hasText = !hasReasoning && Objects.nonNull(text) && !text.isBlank();
+            final var hasToolCalls = !output.getToolCalls().isEmpty();
+            final var finishReason = generation.getMetadata().getFinishReason();
+            final var hasFinish = Objects.nonNull(finishReason) && !finishReason.isEmpty();
+
+            if (hasReasoning) {
+                if (!reasoningOpen) {
+                    events.add(new SseEvent.ReasoningStart(reasoningId));
+                    reasoningOpen = true;
+                }
+                final var delta = reasoningDelta(reasoning);
+                if (!delta.isEmpty()) {
+                    events.add(new SseEvent.ReasoningDelta(reasoningId, delta));
+                }
+            } else if (reasoningOpen && (hasText || hasToolCalls || hasFinish)) {
+                events.add(new SseEvent.ReasoningEnd(reasoningId));
+                reasoningOpen = false;
+            }
+
+            if (hasText) {
                 if (!textBlockOpen) {
                     events.add(new SseEvent.TextStart(id));
                     textBlockOpen = true;
@@ -83,8 +108,11 @@ public final class ChatResponseStreamConverter {
                 events.add(new SseEvent.ToolInputAvailable(toolCall.id(), toolCall.name(), toolCall.arguments()));
             }
 
-            final var finishReason = generation.getMetadata().getFinishReason();
-            if (Objects.nonNull(finishReason) && !finishReason.isEmpty()) {
+            if (hasFinish) {
+                if (reasoningOpen) {
+                    events.add(new SseEvent.ReasoningEnd(reasoningId));
+                    reasoningOpen = false;
+                }
                 if (textBlockOpen) {
                     events.add(new SseEvent.TextEnd(id));
                     textBlockOpen = false;
@@ -95,6 +123,20 @@ public final class ChatResponseStreamConverter {
             }
 
             return List.copyOf(events);
+        }
+
+        /**
+         * Converts a chunk's reasoning into a delta: a cumulative chunk (starts with what was
+         * already emitted) yields only the new suffix, a pure-delta chunk is returned as-is.
+         */
+        private String reasoningDelta(final String reasoning) {
+            if (reasoning.startsWith(reasoningAccumulated)) {
+                final var delta = reasoning.substring(reasoningAccumulated.length());
+                reasoningAccumulated = reasoning;
+                return delta;
+            }
+            reasoningAccumulated = reasoningAccumulated + reasoning;
+            return reasoning;
         }
 
         private static Usage toUsage(final ChatResponseMetadata metadata) {

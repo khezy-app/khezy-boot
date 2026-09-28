@@ -147,6 +147,6 @@ public final class AiElementsSse {
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("X-Accel-Buffering", "no");
         response.setHeader("X-Vercel-AI-UI-Message-Stream", "v1");
-        response.setContentType("text/event-stream");
+        response.setContentType("text/event-stream;charset=UTF-8");
     }
 }

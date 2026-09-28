@@ -2,7 +2,7 @@ package io.github.khezyapp.aielements.springai.convert;
 
 import io.github.khezyapp.aielements.model.common.FinishReason;
 import io.github.khezyapp.aielements.model.request.TextPart;
-import io.github.khezyapp.aielements.model.request.ToolInvocationPart;
+import io.github.khezyapp.aielements.model.request.ToolPart;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -57,7 +57,7 @@ class ChatResponseConverterTest {
     }
 
     @Test
-    @DisplayName("assistant text and tool calls become TextPart and ToolInvocationPart with state call")
+    @DisplayName("assistant text and tool calls become TextPart and a dynamic ToolPart")
     void assistantTextAndToolCallsBecomeParts() {
         final var assistant = AssistantMessage.builder()
                 .content("Here is the weather")
@@ -71,14 +71,14 @@ class ChatResponseConverterTest {
         assertInstanceOf(TextPart.class, parts.get(0));
         assertEquals("Here is the weather", ((TextPart) parts.get(0)).text());
 
-        assertInstanceOf(ToolInvocationPart.class, parts.get(1));
-        final var toolPart = (ToolInvocationPart) parts.get(1);
-        assertEquals("tool-invocation", toolPart.type());
+        assertInstanceOf(ToolPart.class, parts.get(1));
+        final var toolPart = (ToolPart) parts.get(1);
+        assertEquals("dynamic-tool", toolPart.type());
         assertEquals("call-1", toolPart.toolCallId());
         assertEquals("getWeather", toolPart.toolName());
-        assertEquals("call", toolPart.state());
-        assertEquals(Map.of("city", "Siem Reap"), toolPart.args());
-        assertNull(toolPart.result());
+        assertEquals("input-available", toolPart.state());
+        assertEquals(Map.of("city", "Siem Reap"), toolPart.input());
+        assertNull(toolPart.output());
     }
 
     @Test

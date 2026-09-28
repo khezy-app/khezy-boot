@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -162,5 +163,54 @@ class ChatResponseStreamConverterTest {
 
     private static AssistantMessage assistant(final String text) {
         return AssistantMessage.builder().content(text).build();
+    }
+
+    private static AssistantMessage thinking(final String text) {
+        return AssistantMessage.builder().content(text).properties(Map.of("thinking", true)).build();
+    }
+
+    @Test
+    @DisplayName("emits reasoning start/delta/end before text without leaking thinking into text")
+    void emitsReasoningBeforeText() {
+        final var r1 = new ChatResponse(List.of(new Generation(thinking("Let me"))));
+        final var r2 = new ChatResponse(List.of(new Generation(thinking(" think"))));
+        final var r3 = new ChatResponse(List.of(new Generation(
+                assistant("Answer"),
+                ChatGenerationMetadata.builder().finishReason("stop").build())));
+
+        final var events = ChatResponseStreamConverter.toEvents(Flux.just(r1, r2, r3))
+                .collectList()
+                .block();
+        assertNotNull(events);
+
+        final var start = (SseEvent.Start) events.get(0);
+        final var reasoningId = "reasoning-" + start.messageId();
+        assertEquals(new SseEvent.StartStep(), events.get(1));
+        assertEquals(new SseEvent.ReasoningStart(reasoningId), events.get(2));
+        assertEquals(new SseEvent.ReasoningDelta(reasoningId, "Let me"), events.get(3));
+        assertEquals(new SseEvent.ReasoningDelta(reasoningId, " think"), events.get(4));
+        assertEquals(new SseEvent.ReasoningEnd(reasoningId), events.get(5));
+        assertEquals(new SseEvent.TextStart(start.messageId()), events.get(6));
+        assertEquals(new SseEvent.TextDelta(start.messageId(), "Answer"), events.get(7));
+        assertEquals(new SseEvent.TextEnd(start.messageId()), events.get(8));
+        assertEquals(new SseEvent.FinishStep(), events.get(9));
+    }
+
+    @Test
+    @DisplayName("emits only the new suffix for cumulative reasoning chunks")
+    void emitsOnlyNewSuffixForCumulativeReasoning() {
+        final var r1 = new ChatResponse(List.of(new Generation(thinking("Let me"))));
+        final var r2 = new ChatResponse(List.of(new Generation(thinking("Let me think"))));
+
+        final var events = ChatResponseStreamConverter.toEvents(Flux.just(r1, r2))
+                .collectList()
+                .block();
+        assertNotNull(events);
+
+        final var start = (SseEvent.Start) events.get(0);
+        final var reasoningId = "reasoning-" + start.messageId();
+        assertEquals(new SseEvent.ReasoningStart(reasoningId), events.get(2));
+        assertEquals(new SseEvent.ReasoningDelta(reasoningId, "Let me"), events.get(3));
+        assertEquals(new SseEvent.ReasoningDelta(reasoningId, " think"), events.get(4));
     }
 }

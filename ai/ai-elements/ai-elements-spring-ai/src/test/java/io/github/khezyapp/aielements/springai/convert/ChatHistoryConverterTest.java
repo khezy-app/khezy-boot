@@ -2,8 +2,9 @@ package io.github.khezyapp.aielements.springai.convert;
 
 import io.github.khezyapp.aielements.model.request.ChatMessage;
 import io.github.khezyapp.aielements.model.request.FilePart;
+import io.github.khezyapp.aielements.model.request.ReasoningPart;
 import io.github.khezyapp.aielements.model.request.TextPart;
-import io.github.khezyapp.aielements.model.request.ToolInvocationPart;
+import io.github.khezyapp.aielements.model.request.ToolPart;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChatHistoryConverterTest {
 
@@ -121,13 +123,13 @@ class ChatHistoryConverterTest {
         assertInstanceOf(FilePart.class, result.parts().get(1));
         final var file = (FilePart) result.parts().get(1);
         assertEquals("file", file.type());
-        assertEquals("photo.png", file.name());
-        assertEquals("image/png", file.mimeType());
-        assertEquals("YWJj", file.data());
+        assertEquals("photo.png", file.filename());
+        assertEquals("image/png", file.mediaType());
+        assertEquals("data:image/png;base64,YWJj", file.url());
     }
 
     @Test
-    @DisplayName("assistant tool calls map to ToolInvocationPart with state call")
+    @DisplayName("assistant tool calls map to a dynamic ToolPart in state input-available")
     void mapsAssistantToolCalls() {
         final var assistant = AssistantMessage.builder()
                 .content("")
@@ -138,16 +140,16 @@ class ChatHistoryConverterTest {
         final var result = ChatHistoryConverter.toChatMessage(assistant);
 
         assertEquals("assistant", result.role());
-        final var invocation = (ToolInvocationPart) result.parts().get(0);
-        assertEquals("tool-invocation", invocation.type());
+        final var invocation = (ToolPart) result.parts().get(0);
+        assertEquals("dynamic-tool", invocation.type());
         assertEquals("call-1", invocation.toolCallId());
         assertEquals("getWeather", invocation.toolName());
-        assertEquals("call", invocation.state());
-        assertEquals(Map.of("city", "Siem Reap"), invocation.args());
+        assertEquals("input-available", invocation.state());
+        assertEquals(Map.of("city", "Siem Reap"), invocation.input());
     }
 
     @Test
-    @DisplayName("tool results merge into the preceding assistant message as state result")
+    @DisplayName("tool results merge into the preceding assistant message as output-available")
     void mergesToolResultsIntoAssistant() {
         final var assistant = AssistantMessage.builder()
                 .content("")
@@ -165,9 +167,10 @@ class ChatHistoryConverterTest {
         assertEquals(2, result.size());
         final var assistantMessage = result.get(1);
         assertEquals("assistant", assistantMessage.role());
-        final var invocation = (ToolInvocationPart) assistantMessage.parts().get(0);
-        assertEquals("result", invocation.state());
-        assertEquals(Map.of("temp", 33), invocation.result());
+        final var invocation = (ToolPart) assistantMessage.parts().get(0);
+        assertEquals("output-available", invocation.state());
+        assertEquals(Map.of("temp", 33), invocation.output());
+        assertEquals(Map.of("city", "Siem Reap"), invocation.input());
     }
 
     private static void assertIsTextPart(final ChatMessage message, final String text) {
@@ -175,5 +178,36 @@ class ChatHistoryConverterTest {
         final var part = message.parts().get(0);
         assertInstanceOf(TextPart.class, part);
         assertEquals(text, ((TextPart) part).text());
+    }
+
+    @Test
+    @DisplayName("assistant reasoning metadata becomes a ReasoningPart before the text")
+    void mapsAssistantReasoning() {
+        final var assistant = AssistantMessage.builder()
+                .content("answer")
+                .properties(Map.of("reasoning", "let me think"))
+                .build();
+
+        final var result = ChatHistoryConverter.toChatMessage(assistant);
+
+        final var reasoning = assertInstanceOf(ReasoningPart.class, result.parts().get(0));
+        assertEquals("reasoning", reasoning.type());
+        assertEquals("let me think", reasoning.text());
+        assertInstanceOf(TextPart.class, result.parts().get(1));
+    }
+
+    @Test
+    @DisplayName("synthetic (compaction summary) messages are excluded from history")
+    void skipsSyntheticMessages() {
+        final var synthetic = AssistantMessage.builder()
+                .content("summary of older turns")
+                .properties(Map.of("synthetic", true))
+                .build();
+
+        final var result = ChatHistoryConverter.toChatMessages(
+                List.of(new UserMessage("hi"), new AssistantMessage("real answer"), synthetic));
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().noneMatch(message -> "summary of older turns".equals(message.content())));
     }
 }
