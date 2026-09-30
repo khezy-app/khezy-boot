@@ -4,7 +4,7 @@ Adapts a Spring AI `ChatClient` / `ChatResponse` stream into the Vercel
 **UI-message-stream** SSE bytes. This is the module that makes Spring AI speak the
 protocol the frontend expects.
 
-`io.github.khezyapp:ai-elements-spring-ai:1.0.0` — depends on `spring-ai-client-chat`,
+`io.github.khezyapp:ai-elements-spring-ai:1.0.1` — depends on `spring-ai-client-chat`,
 `spring-webmvc` and `jakarta.servlet-api`, and on the
 [`ai-elements-model`](../ai-elements-model/) wire model.
 

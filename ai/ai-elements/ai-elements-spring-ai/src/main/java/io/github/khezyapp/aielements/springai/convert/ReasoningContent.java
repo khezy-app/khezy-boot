@@ -62,6 +62,20 @@ public final class ReasoningContent {
         return reflectReasoningContent(message);
     }
 
+    /**
+     * True when the reasoning is carried as the message content itself (Anthropic/Gemini
+     * content-flagged reasoning), i.e. {@code getText()} must not also be emitted as a text block.
+     */
+    public static boolean isContentFlagged(final AssistantMessage message) {
+        if (Objects.isNull(message)) {
+            return false;
+        }
+        final var metadata = message.getMetadata();
+        return Objects.nonNull(metadata)
+                && (Boolean.TRUE.equals(metadata.get(IS_THOUGHT))
+                        || Boolean.TRUE.equals(metadata.get(THINKING)));
+    }
+
     private static String text(final AssistantMessage message) {
         final var content = message.getText();
         return Objects.nonNull(content) && !content.isEmpty() ? content : null;
