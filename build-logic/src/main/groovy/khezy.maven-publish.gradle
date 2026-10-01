@@ -12,7 +12,7 @@ mavenPublishing {
     publishToMavenCentral(true)
 
     // 3. Signing (Replaces your signing block)
-    //signAllPublications()
+    signAllPublications()
 
     // 4. POM Metadata (The plugin needs this to generate the POM)
     pom {
