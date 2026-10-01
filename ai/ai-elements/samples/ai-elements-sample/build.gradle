@@ -11,7 +11,7 @@ ext {
 }
 
 dependencies {
-    implementation "io.github.khezyapp:ai-elements-spring-ai:1.0.0"
+    implementation "io.github.khezyapp:ai-elements-spring-ai:1.0.1"
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.ai:spring-ai-starter-model-deepseek'
 }

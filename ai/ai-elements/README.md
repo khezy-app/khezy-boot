@@ -13,7 +13,7 @@ the model's reactive `ChatResponse` stream into the protocol bytes the UI expect
 | Module | Coordinates | What you get |
 |---|---|---|
 | [`ai-elements-model`](ai-elements-model/) | `io.github.khezyapp:ai-elements-model:1.0.0` | Request DTOs (`ChatRequest`) + the `SseEvent` wire model, written once against the shared Jackson 2.x annotations |
-| [`ai-elements-spring-ai`](ai-elements-spring-ai/) | `io.github.khezyapp:ai-elements-spring-ai:1.0.0` | Converts Spring AI `ChatResponse`/request into the event stream, and writes it over servlet `SseEmitter` / reactive transports |
+| [`ai-elements-spring-ai`](ai-elements-spring-ai/) | `io.github.khezyapp:ai-elements-spring-ai:1.0.1` | Converts Spring AI `ChatResponse`/request into the event stream, and writes it over servlet `SseEmitter` / reactive transports |
 | [`samples/ai-elements-sample`](samples/ai-elements-sample/) | `0.0.1-SNAPSHOT` | Runnable **servlet** app: `POST /api/chat` returning the SSE bytes — mock-first, then live DeepSeek via a profile |
 | [`samples/ai-elements-webflux-sample`](samples/ai-elements-webflux-sample/) | `0.0.1-SNAPSHOT` | Runnable **WebFlux** app on Netty: `POST /api/chat` returning `Flux<ServerSentEvent<String>>` via `AiElementsSse.streamChat(...)` — mock-first, then live DeepSeek via a profile |
 
@@ -26,7 +26,7 @@ stream:
 
 ```groovy
 dependencies {
-    implementation "io.github.khezyapp:ai-elements-spring-ai:1.0.0"
+    implementation "io.github.khezyapp:ai-elements-spring-ai:1.0.1"
     implementation "org.springframework.ai:spring-ai-starter-model-deepseek" // any provider
 }
 ```

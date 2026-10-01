@@ -6,7 +6,9 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReasoningContentTest {
 
@@ -64,6 +66,23 @@ class ReasoningContentTest {
         assertNull(ReasoningContent.extract(AssistantMessage.builder()
             .properties(Map.of("thinking", true))
             .build()));
+    }
+
+    @Test
+    void contentFlagIsReportedForThinkingAndThought() {
+        assertTrue(ReasoningContent.isContentFlagged(
+                AssistantMessage.builder().content("x").properties(Map.of("thinking", true)).build()));
+        assertTrue(ReasoningContent.isContentFlagged(
+                AssistantMessage.builder().content("x").properties(Map.of("isThought", true)).build()));
+    }
+
+    @Test
+    void contentFlagIsFalseForStringMetadataAndPlainText() {
+        assertFalse(ReasoningContent.isContentFlagged(
+                AssistantMessage.builder().properties(Map.of("reasoningContent", "x")).build()));
+        assertFalse(ReasoningContent.isContentFlagged(
+                AssistantMessage.builder().content("hello").build()));
+        assertFalse(ReasoningContent.isContentFlagged(null));
     }
 
     /**

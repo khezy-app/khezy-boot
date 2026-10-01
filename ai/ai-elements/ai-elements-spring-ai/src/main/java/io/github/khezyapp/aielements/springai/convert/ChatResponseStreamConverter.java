@@ -74,23 +74,30 @@ public final class ChatResponseStreamConverter {
             final var output = generation.getOutput();
 
             final var reasoning = ReasoningContent.extract(output);
-            final var hasReasoning = Objects.nonNull(reasoning) && !reasoning.isBlank();
+            final var hasReasoningValue = Objects.nonNull(reasoning) && !reasoning.isBlank();
+            // Content-flagged reasoning (Anthropic/Gemini) *is* getText(); string-metadata reasoning
+            // (Ollama/OpenAI `reasoningContent`) is a separate channel, so text must still be emitted.
             final var text = output.getText();
-            final var hasText = !hasReasoning && Objects.nonNull(text) && !text.isBlank();
+            final var hasText = Objects.nonNull(text) && !text.isBlank()
+                    && !(hasReasoningValue && ReasoningContent.isContentFlagged(output));
             final var hasToolCalls = !output.getToolCalls().isEmpty();
             final var finishReason = generation.getMetadata().getFinishReason();
             final var hasFinish = Objects.nonNull(finishReason) && !finishReason.isEmpty();
 
-            if (hasReasoning) {
+            // Reasoning metadata is cumulative and persists on later chunks: only a growing value is
+            // *new* reasoning. An unchanged value is stale and must not re-open the block.
+            final var delta = hasReasoningValue ? reasoningDelta(reasoning) : "";
+            final var hasNewReasoning = !delta.isEmpty();
+
+            if (hasNewReasoning) {
                 if (!reasoningOpen) {
                     events.add(new SseEvent.ReasoningStart(reasoningId));
                     reasoningOpen = true;
                 }
-                final var delta = reasoningDelta(reasoning);
-                if (!delta.isEmpty()) {
-                    events.add(new SseEvent.ReasoningDelta(reasoningId, delta));
-                }
-            } else if (reasoningOpen && (hasText || hasToolCalls || hasFinish)) {
+                events.add(new SseEvent.ReasoningDelta(reasoningId, delta));
+            }
+            // Not `else`: text/tool/finish may arrive on the same chunk that ends the now-stale reasoning.
+            if (reasoningOpen && !hasNewReasoning && (hasText || hasToolCalls || hasFinish)) {
                 events.add(new SseEvent.ReasoningEnd(reasoningId));
                 reasoningOpen = false;
             }
