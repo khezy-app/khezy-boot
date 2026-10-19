@@ -1,0 +1,27 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    cryptoVersion = "1.0.0"
+}
+
+dependencies {
+    api "io.github.khezyapp:khezy-crypto:${cryptoVersion}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+    compileOnly "org.springframework.boot:spring-boot-starter-actuator"
+    testImplementation "org.springframework.boot:spring-boot-starter-actuator"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy Crypto Spring Boot Starter"
+        description = """
+        Spring Boot auto-configuration for Khezy Crypto: property binding, key providers,
+        rotation scheduler, health indicator, and audit events."""
+    }
+}

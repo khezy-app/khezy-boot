@@ -1,5 +1,7 @@
 package io.github.khezyapp.api.security.crypto;
 
+import io.github.khezyapp.crypto.contract.StringEncryptor;
+
 import java.util.List;
 
 /**
@@ -24,5 +26,15 @@ public abstract class CustomEncryptors {
         final var registry = new DefaultEncryptorRegistry(encryptorData);
         final var formatterManager = new CipherTextFormatterManager(cipherFormatters);
         return new CustomEncryptor(registry, formatterManager);
+    }
+
+    /**
+     * Creates a new-format adapter backed by Khezy Crypto.
+     *
+     * @param stringEncryptor the shared string encryptor
+     * @return a new encryptor instance
+     */
+    public CustomEncryptor createEncryptor(final StringEncryptor stringEncryptor) {
+        return new CustomEncryptor(stringEncryptor);
     }
 }
