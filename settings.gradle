@@ -15,6 +15,9 @@ includeBuild("rest-api/api-security")
 includeBuild("auto-configurations/rest-api/api-exception-spring-boot-starter")
 includeBuild("auto-configurations/rest-api/api-security-spring-boot-starter")
 
+includeBuild("security/crypto/khezy-crypto")
+includeBuild("auto-configurations/security/crypto-spring-boot-starter")
+
 includeBuild("examples/db-query-jpa-spec")
 includeBuild("examples/db-query-jooq-spec")
 includeBuild("examples/security/security-starter")
@@ -25,8 +28,10 @@ includeBuild("examples/security/security-customization")
 
 includeBuild("ai/a2a/a2a-core")
 includeBuild("ai/a2a/a2a-core-default")
+includeBuild("ai/a2a/a2a-store-jpa")
 includeBuild("ai/a2a/a2a-spring-ai")
 includeBuild("ai/a2a/a2a-spring-boot-starter")
+includeBuild("ai/a2a/a2a-observability-otel")
 
 includeBuild("ai/a2a/samples/a2a-server-sample")
 includeBuild("ai/a2a/samples/a2a-client-sample")

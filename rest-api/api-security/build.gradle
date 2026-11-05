@@ -12,9 +12,11 @@ repositories {
 
 ext {
     jjwtVersion = "0.13.0"
+    cryptoVersion = "1.0.0"
 }
 
 dependencies {
+    api "io.github.khezyapp:khezy-crypto:${cryptoVersion}"
     // Core security — exposed in public API: Authentication, GrantedAuthority,
     // PreAuthorize, SecurityExpressionRoot, AccessDeniedHandler, etc.
     api 'org.springframework.boot:spring-boot-starter-security'

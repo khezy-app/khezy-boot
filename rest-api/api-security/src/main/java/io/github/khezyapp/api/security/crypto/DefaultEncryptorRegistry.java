@@ -35,15 +35,10 @@ public class DefaultEncryptorRegistry implements EncryptorRegistry {
 
     @Override
     public TextEncryptor getTextEncryptor(final String version) {
-        if (!textEncryptorMap.containsKey(version)) {
-            return textEncryptorMap.get(version);
-        }
-
-        final var data = getEncryptorData(version);
-        final var encryptor = Encryptors.delux(data.password(), data.salt());
-        textEncryptorMap.put(version, encryptor);
-
-        return encryptor;
+        return textEncryptorMap.computeIfAbsent(version, key -> {
+            final var data = getEncryptorData(key);
+            return Encryptors.delux(data.password(), data.salt());
+        });
     }
 
     @Override

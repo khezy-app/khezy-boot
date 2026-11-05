@@ -1,91 +1,95 @@
 package io.github.khezyapp.a2a.sampleclient;
 
-import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
-import io.github.khezyapp.a2a.coredef.client.SdkA2ARemoteAgentClient;
-import org.a2aproject.sdk.spec.EventKind;
-import org.a2aproject.sdk.spec.Message;
-import org.a2aproject.sdk.spec.Task;
-import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import lombok.extern.slf4j.Slf4j;
+import io.github.khezyapp.a2a.core.client.A2AConnector;
+import io.github.khezyapp.a2a.core.client.SendOutcome;
+import io.github.khezyapp.a2a.coredef.client.RemoteAgentRegistry;
+import io.github.khezyapp.a2a.starter.A2AClientProperties;
 
 /**
- * Host-agent validation loop: discover the remote agent card, send "2 + 3" over the
- * {@link SdkA2ARemoteAgentClient} and log the reply. Failures are logged, never thrown —
- * a sample must not crash the boot process; read the ERROR line to see what went wrong.
+ * Host-agent validation loop: discover the remote agent card, send {@code "2 + 3"}, then
+ * demonstrate a multi-turn {@code INPUT_REQUIRED} resume through {@link A2AConnector}.
+ *
+ * <p>Failures are logged, never thrown — a sample must not crash the boot process; read
+ * the ERROR line to see what went wrong.</p>
  */
-@Slf4j
 @Component
 public class HostAgentRunner implements CommandLineRunner {
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
-    private static final String DEFAULT_SERVER_URL = "http://localhost:8080";
-    private static final String MATH_EXPRESSION = "2 + 3";
+    private static final Logger LOG = LoggerFactory.getLogger(HostAgentRunner.class);
 
-    private final String serverUrl;
+    private static final String DEFAULT_URL = "http://localhost:8080/a2a";
+    private static final String ADD_SKILL = "add";
+    private static final String ADD_CONVERSATION = "sample-add";
+    private static final String MULTI_TURN_CONVERSATION = "sample-multiturn";
 
-    public HostAgentRunner(
-            @Value("${a2a.server.url:" + DEFAULT_SERVER_URL + "}") final String serverUrl) {
-        this.serverUrl = serverUrl;
+    private final RemoteAgentRegistry registry;
+    private final A2AConnector connector;
+    private final A2AClientProperties properties;
+
+    /**
+     * Creates the runner.
+     *
+     * @param registry the agent registry
+     * @param connector the multi-turn connector
+     * @param properties the client properties
+     */
+    public HostAgentRunner(final RemoteAgentRegistry registry,
+                           final A2AConnector connector,
+                           final A2AClientProperties properties) {
+        this.registry = registry;
+        this.connector = connector;
+        this.properties = properties;
     }
 
     @Override
     public void run(final String... args) {
-        final var baseUrl = URI.create(serverUrl);
-        try (var client = SdkA2ARemoteAgentClient.forJsonRpc(baseUrl, TIMEOUT)) {
-            final var card = client.discover(baseUrl);
-            log.info("Discovered remote agent '{}' v{}", card.name(), card.version());
-            final var reply = client.sendMessage(userMessage(MATH_EXPRESSION), TIMEOUT);
-            log.info("Remote math agent replied: {}", describe(reply));
-        } catch (final Exception e) {
-            log.error("A2A host agent call failed for {}: {}", serverUrl,
-                    Objects.requireNonNullElse(e.getMessage(), e.getClass().getName()), e);
+        final var url = properties.getUrls().isEmpty() ? DEFAULT_URL : properties.getUrls().get(0);
+        try {
+            final var agent = registry.register(url)
+                    .or(() -> registry.find(url))
+                    .orElse(null);
+            if (Objects.isNull(agent)) {
+                LOG.error("Could not discover an agent at {} — is the server sample running?", url);
+                return;
+            }
+            LOG.info("Discovered remote agent '{}' v{} at {}",
+                    agent.name(), agent.card().version(), agent.baseUrl());
+
+            final var outcome = connector.invoke(agent, List.of(new TextPart("2 + 3")), ADD_SKILL, ADD_CONVERSATION);
+            LOG.info("2 + 3 -> {}", describe(outcome));
+
+            final var firstTurn = connector.invoke(agent, List.of(new TextPart("2 +")),
+                    ADD_SKILL, MULTI_TURN_CONVERSATION);
+            if (!firstTurn.isInterrupted()) {
+                LOG.info("Expected INPUT_REQUIRED for '2 +' but got: {}", describe(firstTurn));
+                return;
+            }
+            LOG.info("Agent asks: {}", firstTurn.message());
+            final var resumed = connector.invoke(agent, List.of(new TextPart("3")),
+                    ADD_SKILL, MULTI_TURN_CONVERSATION);
+            LOG.info("2 + 3 (resumed) -> {}", describe(resumed));
+        } catch (final RuntimeException e) {
+            LOG.error("A2A host agent call failed for {}: {}", url, e.getMessage(), e);
         }
     }
 
-    private static Message userMessage(final String text) {
-        return Message.builder()
-                .messageId(UUID.randomUUID().toString())
-                .role(Message.Role.ROLE_USER)
-                .parts(List.of(new TextPart(text)))
-                .build();
-    }
-
-    /**
-     * Renders whichever terminal event came back: a reply message, a completed status
-     * update carrying one, or a bare task.
-     */
-    private static String describe(final EventKind event) {
-        if (event instanceof final Message message) {
-            return "message \"" + firstText(message).orElse("<no text>") + "\"";
+    private static String describe(final SendOutcome outcome) {
+        if (outcome.isError()) {
+            return "ERROR " + outcome.error();
         }
-        if (event instanceof final TaskStatusUpdateEvent update
-                && Objects.nonNull(update.status().message())) {
-            return update.status().state() + " \""
-                    + firstText(update.status().message()).orElse("<no text>") + "\"";
-        }
-        if (event instanceof final Task task) {
-            return "task " + task.id() + " state=" + task.status().state();
-        }
-        return event.getClass().getSimpleName();
-    }
-
-    private static Optional<String> firstText(final Message message) {
-        return message.parts().stream()
-                .filter(TextPart.class::isInstance)
-                .map(TextPart.class::cast)
-                .map(TextPart::text)
-                .filter(text -> !text.isBlank())
-                .findFirst();
+        final var artifacts = outcome.artifacts().isEmpty()
+                ? ""
+                : " artifacts=" + outcome.artifacts();
+        final var state = outcome.state() == null ? "MESSAGE" : outcome.state().toString();
+        return state + " \"" + outcome.message() + "\"" + artifacts;
     }
 }

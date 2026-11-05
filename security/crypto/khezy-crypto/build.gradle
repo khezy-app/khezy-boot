@@ -1,0 +1,15 @@
+plugins {
+    id("khezy.java-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+mavenPublishing {
+    pom {
+        name = "Khezy Crypto"
+        description = """
+        Application-level encryption utility for sensitive data at rest: AES-256-GCM,
+        versioned ciphertext, pluggable key providers, and first-class key rotation."""
+    }
+}

@@ -7,5 +7,11 @@ version = '0.0.1-SNAPSHOT'
 description = 'A2A math agent server validating the KHEZY A2A starter'
 
 dependencies {
-    implementation "${group}:a2a-spring-boot-starter"
+    implementation "${group}:a2a-spring-boot-starter:1.0.0"
+    // Optional JPA persistence + encryption (activated by the "h2" profile).
+    implementation "${group}:a2a-store-jpa:1.0.0"
+    implementation "${group}:crypto-spring-boot-starter:1.0.0"
+    runtimeOnly 'com.h2database:h2'
+    // Hibernate 7's runtime bytecode provider is not pulled transitively in this build.
+    runtimeOnly 'net.bytebuddy:byte-buddy'
 }

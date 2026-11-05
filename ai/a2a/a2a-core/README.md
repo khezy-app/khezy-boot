@@ -1,40 +1,48 @@
 # Khezy A2A Core
 
-Port interfaces for an A2A agent server and host, typed on the official A2A Java SDK
-spec model (`org.a2aproject.sdk.spec.*`). This module sits on top of the SDK — it owns
-no wire types and adds none — it only defines the **behavior contracts** the SDK leaves
-to you: how agents execute, where tasks live, how requests dispatch, and how callers
-identify themselves.
+Behavior contracts and the business seam for A2A, typed entirely on the official A2A Java
+SDK spec model (`org.a2aproject.sdk.spec.*`). This module sits on top of the SDK: it owns
+no wire types and adds no protocol behavior. Pure Java — no Spring, no HTTP.
 
-`io.github.khezyapp:a2a-core:1.0.0` — depends only on `org.a2aproject.sdk:a2a-java-sdk-spec`.
+`io.github.khezyapp:a2a-core:1.0.0` · SDK `1.4.0.Final`
 
-## The ports
+## Server seam (`io.github.khezyapp.a2a.core.server`)
 
-| Package | Ports | Role |
-|---|---|---|
-| `core.executor` | `A2AAgentExecutor`, `A2AStreamingAgentExecutor`, `AbstractA2AAgentExecutor`, `AgentExecutionContext`, `AgentEventSink`, `CallerIdentity`, `CancellationToken` | Your agent's business logic |
-| `core.store` | `A2ATaskStore`, `A2AEventQueue`, `Subscription`, `PushNotificationSender` | Task persistence + event fan-out |
-| `core.dispatch` | `A2ARequestDispatcher`, `CallContext` | Transport-independent request routing |
-| `core.client` | `A2ARemoteAgentClient`, `A2AStreamingRemoteAgentClient`, `CallContext` | Calling remote agents |
-| `core.identity` | `CallerIdentityResolver` | Resolving who is calling |
-| `core.error` | `A2ACoreException`, `TaskNotFoundException`, `TaskNotCancelableException`, `TaskCancelledException`, `TaskStoreException` | Error taxonomy |
+| Type | Purpose |
+|---|---|
+| `AbstractA2AAgentExecutor` | Seeds a new task, calls `startWork()`, then hands your code an `A2ARequest`. Still a plain SDK `AgentExecutor`, so lambdas keep working. |
+| `A2ARequest` | `userInput()`, `incoming()`, `currentTask()`, `caller()`, `tenant()`, `attributes()` plus `reply`, `artifact`, `complete`, `requireInput`, `requireAuth`, `fail`, `cancel`. Escape hatches: `context()`, `emitter()`. |
+| `A2ACallContextFactory<T>` | Maps a transport request to the SDK `ServerCallContext` (user, tenant, agent scope, headers). |
+| `TaskScopeLocator` | Resolves the persistence scope of a stored task. `fromTaskStore(...)` is the generic fallback; JPA provides a denormalized lookup. |
+| `TenantTaskAuthorizationProvider` | SDK `TaskAuthorizationProvider` that requires both call-state and task-metadata scopes to match. Missing/blank/different scopes deny. |
+| `A2AStoreProvider` | Bundles `TaskStore` + `TaskStateProvider` + `PushNotificationConfigStore`; `inMemory()` shares one store for all three views. |
+| `A2AServerCustomizer` | Hook called after the SDK `DefaultRequestHandler` is built. |
+| `A2AContextKeys` | App-owned call-context keys; `AGENT_SCOPE` is the persistence scope. The SDK tenant is routing only. |
 
-## The dual-interface executor pattern
+Business failures: use `request.fail(...)` for a visible failed task or throw an SDK
+`A2AError` for protocol errors. Unexpected runtime exceptions are mapped by the SDK
+request handler; the base class does not swallow them.
 
-Following Spring AI's pattern, execution comes in two flavors:
+## Client contracts (`io.github.khezyapp.a2a.core.client`)
 
-- `A2AAgentExecutor.execute(context)` → returns one final `EventKind`
-  (blocking / non-streaming).
-- `A2AStreamingAgentExecutor.stream(context, sink)` → emits many events through
-  `AgentEventSink` (`chunk`, `completed`, `failed`).
+| Type | Purpose |
+|---|---|
+| `RemoteAgent` / `RemoteSkill` / `RemoteArtifact` | Views over a resolved SDK `AgentCard` and its skills/artifacts. |
+| `AgentCardResolver` | `Optional<AgentCard> resolve(String baseUrl)`. |
+| `A2AInvoker` | Sends one `SendRequest` and returns a `SendOutcome`. |
+| `A2AConnector` | Store-aware multi-turn entry point: injects remembered ids, serializes calls per conversation, records interrupted/pending/settled state. |
+| `A2AConversationStore` | Conversation memory (`ref`, `recordInterrupted`, `recordPending`, `recordSettled`). |
+| `SendRequest` / `SendOptions` | Immutable request options (parts, skill, ids, tenant, metadata, extensions) and strategy/timeout options (`BLOCKING`, `POLL`, `STREAM`). |
+| `SendOutcome` | One normalized result: state, message, artifacts, ids, or an error string. No KHEZY exception hierarchy. |
+| `A2AClientOperations` | Facade for `getTask`, `listTasks`, `cancelTask`, push-config CRUD and the extended card. |
 
-Extend `AbstractA2AAgentExecutor` and implement only `execute()` — streaming works
-automatically by emitting your result as a single completed event. Override `stream()`
-when you want true incremental output.
+`SendOutcome.isFinal()` is also true for a standalone message response (no task state).
+`A2AConnector.invoke(...)` requires a non-blank conversation id; `""` is the store key for
+"no skill".
 
 ## What this does NOT do
 
-- No implementations — every port needs a bean (see [`a2a-core-default`](../a2a-core-default/)).
-- No Spring, no HTTP — this is pure Java; transport lives in the starter.
-- No protocol modeling — messages, tasks, errors are SDK types; learn them from the
-  [official A2A spec](https://a2a-protocol.org), not from here.
+- No implementations — defaults live in [`a2a-core-default`](../a2a-core-default/).
+- No transport, no Spring, no auto-configuration.
+- No duplicate A2A model or error taxonomy; learn those from the
+  [A2A specification](https://a2a-protocol.org) and the SDK.
