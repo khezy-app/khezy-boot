@@ -14,7 +14,8 @@ public final class KeyHandle {
     private final KeyMetadata metadata;
     private final SecretKey key;
 
-    public KeyHandle(final KeyMetadata metadata, final SecretKey key) {
+    public KeyHandle(final KeyMetadata metadata,
+                     final SecretKey key) {
         this.metadata = Objects.requireNonNull(metadata, "metadata");
         this.key = key;
     }

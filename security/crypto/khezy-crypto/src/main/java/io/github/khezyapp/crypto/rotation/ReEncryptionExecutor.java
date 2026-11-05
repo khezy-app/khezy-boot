@@ -16,7 +16,8 @@ public final class ReEncryptionExecutor {
             final ReEncryptionSink<T> sink,
             final ReEncryptor reEncryptor,
             final CipherContext context,
-            final int batchSize) {
+            final int batchSize
+    ) {
         return run(source, sink, reEncryptor, context, batchSize, false);
     }
 
@@ -26,7 +27,8 @@ public final class ReEncryptionExecutor {
             final ReEncryptor reEncryptor,
             final CipherContext context,
             final int batchSize,
-            final boolean continueOnError) {
+            final boolean continueOnError
+    ) {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(sink, "sink");
         Objects.requireNonNull(reEncryptor, "reEncryptor");

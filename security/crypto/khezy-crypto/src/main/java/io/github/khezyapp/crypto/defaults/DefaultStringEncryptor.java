@@ -16,20 +16,23 @@ public final class DefaultStringEncryptor implements StringEncryptor {
     private final Encryptor encryptor;
     private final CipherTextCodec codec;
 
-    public DefaultStringEncryptor(final Encryptor encryptor, final CipherTextCodec codec) {
+    public DefaultStringEncryptor(final Encryptor encryptor,
+                                  final CipherTextCodec codec) {
         this.encryptor = Objects.requireNonNull(encryptor, "encryptor");
         this.codec = Objects.requireNonNull(codec, "codec");
     }
 
     @Override
-    public String encrypt(final String plaintext, final CipherContext context) {
+    public String encrypt(final String plaintext,
+                          final CipherContext context) {
         Objects.requireNonNull(plaintext, "plaintext");
         final var ciphertext = encryptor.encrypt(plaintext.getBytes(StandardCharsets.UTF_8), context);
         return codec.encode(ciphertext);
     }
 
     @Override
-    public String decrypt(final String ciphertext, final CipherContext context) {
+    public String decrypt(final String ciphertext,
+                          final CipherContext context) {
         Objects.requireNonNull(ciphertext, "ciphertext");
         final var value = codec.decode(ciphertext);
         return new String(encryptor.decrypt(value, context), StandardCharsets.UTF_8);

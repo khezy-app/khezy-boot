@@ -1,8 +1,7 @@
-# KHEZY A2A v2 — Action Plan (Master Context)
+# KHEZY A2A — Action Plan (Master Context)
 
 > **Read this file first.** Every task file in `scrum/a2a/v2-actions/` references it.
-> The design is `scrum/a2a/a2a-design-v2.md`. v1 is archived under
-> `scrum/a2a/_archive-v1/` and is **superseded** — do not follow it.
+> The design is `scrum/a2a/a2a-design-v2.md`.
 > SDK 1.4 adoption decisions are in `../sdk-1.4-adoption.md`.
 
 ## 1. Goal

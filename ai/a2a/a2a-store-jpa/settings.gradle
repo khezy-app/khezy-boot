@@ -1,0 +1,7 @@
+pluginManagement {
+    includeBuild("../../../build-logic")
+}
+
+includeBuild("../../../security/crypto/khezy-crypto")
+
+rootProject.name = "a2a-store-jpa"

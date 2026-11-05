@@ -37,8 +37,7 @@ class DefaultKeyRotationServiceTest {
         provider.create(KeyCreateRequest.builder().id("k1").activateNow(true).build());
         codec = new KhezyCipherTextCodec();
         encryptor = new DefaultEncryptor(provider, new AesGcmBackend(), new InMemoryEncryptionCounter());
-        service = new DefaultKeyRotationService(provider, new InMemoryEncryptionCounter(),
-                encryptor, codec);
+        service = new DefaultKeyRotationService(provider, new InMemoryEncryptionCounter(), encryptor, codec);
     }
 
     @Test

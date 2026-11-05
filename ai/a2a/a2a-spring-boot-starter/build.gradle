@@ -6,29 +6,34 @@ group = "io.github.khezyapp"
 version = "1.0.0"
 
 ext {
-    a2aCoreVersion = '1.0.0'
     a2aCoreDefaultVersion = '1.0.0'
-    a2aSdkVersion = "1.2.0.Final"
+    a2aSpringAiVersion = '1.0.0'
+    a2aSdkVersion = "1.4.0.Final"
 }
 
 dependencies {
-    api "io.github.khezyapp:a2a-core:${a2aCoreVersion}"
+    api platform("org.a2aproject.sdk:a2a-java-sdk-bom:${a2aSdkVersion}")
     api "io.github.khezyapp:a2a-core-default:${a2aCoreDefaultVersion}"
 
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    implementation "org.a2aproject.sdk:a2a-java-sdk-client:${a2aSdkVersion}"
-    implementation "org.a2aproject.sdk:a2a-java-sdk-jsonrpc-common:${a2aSdkVersion}"
-    implementation "org.a2aproject.sdk:a2a-java-sdk-spec-grpc:${a2aSdkVersion}"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-transport-jsonrpc"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-spec-grpc"
 
     compileOnly 'org.springframework.boot:spring-boot-starter-security'
-    testImplementation 'org.springframework.boot:spring-boot-starter-security'
+    compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly "org.springframework.ai:spring-ai-client-chat:2.0.1"
+    compileOnly "io.github.khezyapp:a2a-spring-ai:${a2aSpringAiVersion}"
+
+    testImplementation "org.springframework.ai:spring-ai-client-chat:2.0.1"
+    testImplementation "io.github.khezyapp:a2a-spring-ai:${a2aSpringAiVersion}"
+    testImplementation 'org.springframework.security:spring-security-core'
 }
 
 mavenPublishing {
     pom {
         name = "Khezy A2A Spring Boot Starter"
         description = """
-        Spring Boot starter for the A2A contract layer: auto-configuration, JSON-RPC
-        HTTP endpoints and caller-identity propagation over Spring Security."""
+        Spring Boot starter for A2A: SDK server graph assembly, JSON-RPC and agent-card
+        endpoints, call-context propagation, client wiring and properties."""
     }
 }

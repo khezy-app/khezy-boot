@@ -3,5 +3,9 @@ pluginManagement {
 }
 includeBuild("../../../../ai/a2a/a2a-core")
 includeBuild("../../../../ai/a2a/a2a-core-default")
+includeBuild("../../../../ai/a2a/a2a-spring-ai")
+includeBuild("../../../../ai/a2a/a2a-store-jpa")
 includeBuild("../../../../ai/a2a/a2a-spring-boot-starter")
+includeBuild("../../../../security/crypto/khezy-crypto")
+includeBuild("../../../../auto-configurations/security/crypto-spring-boot-starter")
 rootProject.name = "a2a-server-sample"

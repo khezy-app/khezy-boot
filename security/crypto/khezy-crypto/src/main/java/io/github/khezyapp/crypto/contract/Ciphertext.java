@@ -95,7 +95,8 @@ public final class Ciphertext {
                 + '}';
     }
 
-    private static String requireText(final String value, final String name) {
+    private static String requireText(final String value,
+                                      final String name) {
         if (Objects.isNull(value) || value.isBlank()) {
             throw new IllegalArgumentException(name + " must not be blank");
         }
@@ -110,7 +111,8 @@ public final class Ciphertext {
         return id;
     }
 
-    private static byte[] copyRequired(final byte[] value, final String name) {
+    private static byte[] copyRequired(final byte[] value,
+                                       final String name) {
         if (Objects.isNull(value)) {
             throw new IllegalArgumentException(name + " must not be null");
         }

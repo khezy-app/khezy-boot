@@ -41,7 +41,8 @@ public final class AesGcmBackend implements CryptoBackend {
         this(null, new SecureRandomIvGenerator());
     }
 
-    public AesGcmBackend(final Provider provider, final IvGenerator ivGenerator) {
+    public AesGcmBackend(final Provider provider,
+                         final IvGenerator ivGenerator) {
         this.provider = provider;
         this.ivGenerator = Objects.requireNonNull(ivGenerator, "ivGenerator");
     }
@@ -109,7 +110,8 @@ public final class AesGcmBackend implements CryptoBackend {
                 : Cipher.getInstance(TRANSFORMATION, provider);
     }
 
-    private static void applyAad(final Cipher cipher, final CipherContext context) {
+    private static void applyAad(final Cipher cipher,
+                                 final CipherContext context) {
         if (Objects.nonNull(context.aad())) {
             cipher.updateAAD(context.aad().getBytes(StandardCharsets.UTF_8));
         }
@@ -129,7 +131,8 @@ public final class AesGcmBackend implements CryptoBackend {
         return new SecretKeySpec(encoded, KEY_ALGORITHM);
     }
 
-    private static byte[] concat(final byte[] left, final byte[] right) {
+    private static byte[] concat(final byte[] left,
+                                 final byte[] right) {
         final var combined = new byte[left.length + right.length];
         System.arraycopy(left, 0, combined, 0, left.length);
         System.arraycopy(right, 0, combined, left.length, right.length);

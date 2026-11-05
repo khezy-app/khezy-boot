@@ -1,0 +1,36 @@
+plugins {
+    id("khezy.springboot-library")
+}
+
+group = "io.github.khezyapp"
+version = "1.0.0"
+
+ext {
+    a2aCoreVersion = '1.0.0'
+    a2aSdkVersion = "1.4.0.Final"
+}
+
+dependencies {
+    api platform("org.a2aproject.sdk:a2a-java-sdk-bom:${a2aSdkVersion}")
+    api "io.github.khezyapp:a2a-core:${a2aCoreVersion}"
+    api "io.opentelemetry:opentelemetry-api"
+
+    compileOnly "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-server"
+    compileOnly "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-client"
+    compileOnly "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-client-propagation"
+
+    testImplementation "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-server"
+    testImplementation "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-client"
+    testImplementation "org.a2aproject.sdk:a2a-java-sdk-opentelemetry-client-propagation"
+    testImplementation "io.opentelemetry:opentelemetry-sdk"
+    testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
+}
+
+mavenPublishing {
+    pom {
+        name = "Khezy A2A Observability OpenTelemetry"
+        description = """
+        Optional OpenTelemetry tracing for A2A: a Spring adapter around the SDK
+        RequestHandler decorator and client transport parameters for span propagation."""
+    }
+}

@@ -22,15 +22,13 @@ class ReEncryptionExecutorTest {
         final var provider = new InMemoryKeyProvider();
         provider.create(KeyCreateRequest.builder().id("k1").activateNow(true).build());
         final var codec = new KhezyCipherTextCodec();
-        final var encryptor = new DefaultEncryptor(provider, new AesGcmBackend(),
-                new InMemoryEncryptionCounter());
+        final var encryptor = new DefaultEncryptor(provider, new AesGcmBackend(), new InMemoryEncryptionCounter());
         final var context = CipherContext.of("test");
         final var oldValues = List.of(
                 codec.encode(encryptor.encrypt("a".getBytes(StandardCharsets.UTF_8), context)),
                 codec.encode(encryptor.encrypt("b".getBytes(StandardCharsets.UTF_8), context)));
 
-        final var rotation = new DefaultKeyRotationService(provider, new InMemoryEncryptionCounter(),
-                encryptor, codec);
+        final var rotation = new DefaultKeyRotationService(provider, new InMemoryEncryptionCounter(), encryptor, codec);
         rotation.rotate(RotationRequest.builder().newKeyId("k2").build());
 
         final var records = new ArrayList<>(oldValues.stream().map(Value::new).toList());

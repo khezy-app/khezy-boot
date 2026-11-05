@@ -76,7 +76,7 @@ public final class InMemoryKeyProvider implements KeyManager {
     public synchronized KeyHandle create(final KeyCreateRequest request) {
         final var generated = generator.generate(request);
         final var id = generated.metadata().id();
-        if (keys.putIfAbsent(id, generated) != null) {
+        if (Objects.nonNull(keys.putIfAbsent(id, generated))) {
             throw new KeyLifecycleException("Key id already exists: " + id);
         }
         if (request.activateNow()) {

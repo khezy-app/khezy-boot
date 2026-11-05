@@ -31,7 +31,8 @@ public final class DefaultEncryptor implements Encryptor {
     }
 
     @Override
-    public Ciphertext encrypt(final byte[] plaintext, final CipherContext context) {
+    public Ciphertext encrypt(final byte[] plaintext,
+                              final CipherContext context) {
         Objects.requireNonNull(plaintext, "plaintext");
         Objects.requireNonNull(context, "context");
         final var key = keyProvider.activeKey();
@@ -47,7 +48,8 @@ public final class DefaultEncryptor implements Encryptor {
     }
 
     @Override
-    public byte[] decrypt(final Ciphertext ciphertext, final CipherContext context) {
+    public byte[] decrypt(final Ciphertext ciphertext,
+                          final CipherContext context) {
         Objects.requireNonNull(ciphertext, "ciphertext");
         Objects.requireNonNull(context, "context");
         final var key = keyProvider.find(ciphertext.keyId())

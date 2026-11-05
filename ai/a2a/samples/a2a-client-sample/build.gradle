@@ -4,9 +4,8 @@ plugins {
 
 group = 'io.github.khezyapp'
 version = '0.0.1-SNAPSHOT'
-description = 'A2A host agent validating the KHEZY A2A client port'
+description = 'A2A host agent validating the KHEZY A2A client wiring'
 
 dependencies {
-    implementation "${group}:a2a-core"
-    implementation "${group}:a2a-core-default"
+    implementation "${group}:a2a-spring-boot-starter:1.0.0"
 }

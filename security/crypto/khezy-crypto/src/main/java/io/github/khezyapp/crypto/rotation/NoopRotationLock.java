@@ -10,7 +10,8 @@ import java.util.Optional;
 public final class NoopRotationLock implements RotationLock {
 
     @Override
-    public Optional<LockHandle> tryLock(final String name, final Duration lease) {
+    public Optional<LockHandle> tryLock(final String name,
+                                        final Duration lease) {
         return Optional.of(() -> {
         });
     }

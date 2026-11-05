@@ -1,48 +1,59 @@
 # Khezy A2A Spring AI
 
-Optional adapter that turns a Spring AI `ChatClient` into an A2A agent executor. It
-sits on top of Spring AI — you build and configure the `ChatClient` (model, system
-prompt, advisors); this module only bridges it into the
-[`a2a-core`](../a2a-core/) executor ports.
+Client-side tooling that exposes discovered remote A2A agents and skills to a Spring AI
+model. It sits **on top of** Spring AI and `a2a-core` — you still build and configure the
+`ChatClient` (model, memory, advisors); this module only turns agent cards into tools and
+turns tool calls into A2A requests.
 
-**Prerequisite:** this module assumes you already know Spring AI's `ChatClient`
-(`spring-ai-client-chat:2.0.1`). If prompts, models, and advisors are new to you, start
-with the [Spring AI reference](https://docs.spring.io/spring-ai/reference/) first.
+**Prerequisite:** this module assumes you already know Spring AI's `ToolCallback`,
+`ToolContext` and `ChatClient` (`spring-ai-client-chat:2.0.1`). If tool calling is new to
+you, read the [Spring AI tool calling reference](https://docs.spring.io/spring-ai/reference/)
+first.
 
 `io.github.khezyapp:a2a-spring-ai:1.0.0`
+
+## What is inside
+
+| Type | Purpose |
+|---|---|
+| `A2ASkillToolFactory` | One `ToolCallback` per discovered skill (name/description from the card) |
+| `A2AAgentTools` | `sendToAgent` + `listRemoteAgents` — coarse delegation and discovery |
+| `A2AResultFormatter` | Compact JSON result for the model, A2A ids omitted |
+| `A2APromptProvider` / `A2APromptBuilder` | Routing system prompt built from the skills |
+| `A2AToolContextKeys` | `conversationId` key the host passes via `ToolContext` |
+| `SkillInput` | The `{ "task": "..." }` tool argument |
 
 ## Usage
 
 ```java
-@Bean
-AbstractA2AAgentExecutor myAgent(final ChatClient chatClient) {
-    return ChatClientExecutors.from(
-            chatClient,
-            // blocking: receives the incoming Message, returns the reply text
-            (message, context) -> "you said: " + message.parts().get(0),
-            // streaming override: push chunks through the sink yourself
-            (message, context, sink) -> {
-                sink.chunk(new TextPart("partial"));
-                sink.completed(...);
-            });
-}
+final var registry = ...;   // RemoteAgentRegistry from a2a-core-default
+final var connector = ...;  // A2AConnector (resumes tasks per conversation)
+final var formatter = new A2AResultFormatter();
+final var skills = new A2ASkillToolFactory(registry, connector, formatter);
+final var agents = new A2AAgentTools(registry, connector, formatter);
+final var prompt = new A2APromptBuilder().build(registry.skills());
+
+chatClient.prompt()
+        .system(prompt)
+        .user(question)
+        .toolCallbacks(skills.toolCallbacks())
+        .tools(agents)
+        .toolContext(Map.of(A2AToolContextKeys.CONVERSATION_ID, chatSessionId))
+        .call();
 ```
 
-- `ChatClientExecutors.from(chatClient, blockingHandler)` → blocking-only; streaming is
-  served by the base class fallback (single completed event).
-- `ChatClientExecutors.from(chatClient, blockingHandler, streamingHandler)` → both paths;
-  note the streaming handler delegates **entirely to your code**.
-- `ChatClientExecutors.reactiveStreamingHandler()` → built-in handler that consumes a
-  `Flux<String>` of chunks and completes with the accumulated text — pair it with
-  `chatClient.prompt().user(text).stream().content()`.
+The conversation id is host state, not model input: it lets the connector resume an
+`INPUT_REQUIRED` task without exposing `contextId`/`taskId` to the LLM. A call without it
+returns a structured error instead of silently sharing a conversation.
 
-Handler interfaces: `ChatClientMessageHandler`
-`(ChatClient, AgentExecutionContext) -> String` and
-`StreamingChatClientMessageHandler` `(ChatClient, AgentExecutionContext, AgentEventSink)`.
+When using the Spring Boot starter, all of the above are beans; see
+[`a2a-spring-boot-starter`](../a2a-spring-boot-starter/).
 
 ## What this does NOT do
 
-- No model wiring — you own `ChatClient` construction (OpenAI, Ollama, …).
-- No prompt templates or conversation memory — bring your own.
-- No auto-configuration — plain factory methods; wire the returned executor as a bean
-  yourself (or via the [starter](../a2a-spring-boot-starter/)).
+- It does not adapt a `ChatClient` into a server `AgentExecutor`. Server execution is your
+  business logic — implement `onMessage` and call your own `ChatClient` there.
+- It does not create model clients, memory, or advisors. You own `ChatClient` construction.
+- It does not expose A2A ids to the model, and it does not pick a conversation id for you.
+- Tool descriptions come from the agent card; per-skill JSON input schemas are not modeled
+  (every tool takes a single `task` string).

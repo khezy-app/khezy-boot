@@ -1,23 +1,27 @@
 plugins {
     id("khezy.java-library")
+    id("khezy.java-use-mockito")
 }
 
 group = "io.github.khezyapp"
 version = "1.0.0"
 
 ext {
-    a2aSdkVersion = "1.2.0.Final"
+    a2aSdkVersion = "1.4.0.Final"
 }
 
 dependencies {
-    api "org.a2aproject.sdk:a2a-java-sdk-spec:${a2aSdkVersion}"
+    api platform("org.a2aproject.sdk:a2a-java-sdk-bom:${a2aSdkVersion}")
+    api "org.a2aproject.sdk:a2a-java-sdk-server-common"
+    api "org.a2aproject.sdk:a2a-java-sdk-client"
+    implementation "org.a2aproject.sdk:a2a-java-sdk-transport-jsonrpc"
 }
 
 mavenPublishing {
     pom {
         name = "Khezy A2A Core"
         description = """
-        Port interfaces for the A2A contract layer: execution, dispatch, persistence,
-        client calls and identity, typed on the official A2A Java SDK spec model."""
+        Server business-logic seam and client contracts for A2A, typed on the official
+        A2A Java SDK model."""
     }
 }

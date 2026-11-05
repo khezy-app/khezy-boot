@@ -1,29 +1,24 @@
 package io.github.khezyapp.a2a.sampleserver;
 
-import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
-import io.github.khezyapp.a2a.core.executor.AbstractA2AAgentExecutor;
-import io.github.khezyapp.a2a.core.executor.AgentExecutionContext;
-import org.a2aproject.sdk.spec.A2AError;
-import org.a2aproject.sdk.spec.EventKind;
+import io.github.khezyapp.a2a.core.server.A2ARequest;
+import io.github.khezyapp.a2a.core.server.AbstractA2AAgentExecutor;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.Task;
-import org.a2aproject.sdk.spec.TaskState;
-import org.a2aproject.sdk.spec.TaskStatus;
-import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.springframework.stereotype.Component;
 
 /**
- * Toy agent for local validation: parses {@code <int> <op> <int>} (e.g. "2 + 3") from the
- * incoming text part and answers with a completed status update whose message carries the
- * integer result. Deliberately no expression library and no LLM — the point is the A2A
- * plumbing, not the math.
+ * Toy agent for local validation: parses {@code <int> <op> <int>} (for example
+ * {@code "2 + 3"}) and answers with an artifact plus a completion message.
+ *
+ * <p>The agent never sees task or context ids: {@link A2ARequest} owns that ceremony.
+ * When only part of an expression arrives, the agent asks for the missing operand and
+ * reconstructs the expression from the task history on the next turn.</p>
  */
 @Component
 public class MathAgentExecutor extends AbstractA2AAgentExecutor {
@@ -32,61 +27,74 @@ public class MathAgentExecutor extends AbstractA2AAgentExecutor {
     private static final String OP_SUBTRACT = "-";
     private static final String OP_MULTIPLY = "*";
     private static final String OP_DIVIDE = "/";
-    private static final int INVALID_PARAMS_CODE = -32602;
     private static final int EXPRESSION_TOKENS = 3;
 
     @Override
-    public EventKind execute(final AgentExecutionContext context) {
-        final var incoming = context.incoming();
-        final var expression = firstText(incoming)
-                .orElseThrow(() -> invalidParams("expected one non-blank text part with an arithmetic expression"));
-        final var taskId = resolveTaskId(context);
-        final var contextId = resolveContextId(context, taskId);
-        final var reply = Message.builder()
-                .messageId(UUID.randomUUID().toString())
-                .role(Message.Role.ROLE_AGENT)
-                .parts(List.of(new TextPart(evaluate(expression))))
-                .taskId(taskId)
-                .contextId(contextId)
-                .build();
-        return new TaskStatusUpdateEvent(
-                taskId,
-                new TaskStatus(TaskState.TASK_STATE_COMPLETED, reply, OffsetDateTime.now()),
-                contextId,
-                Map.of());
+    protected void onMessage(final A2ARequest request) {
+        final var expression = expression(request);
+        if (expression.isBlank()) {
+            request.requireInput("What should I calculate? Use '<number> <op> <number>', for example '2 + 3'.");
+            return;
+        }
+        final var tokens = expression.split("\\s+");
+        if (tokens.length < EXPRESSION_TOKENS) {
+            request.requireInput("What is the missing operand?");
+            return;
+        }
+        try {
+            final var result = evaluate(tokens);
+            request.artifact("result", result);
+            request.complete(result);
+        } catch (final InvalidExpressionException e) {
+            request.fail(e.getMessage());
+        }
     }
 
     /**
-     * TaskStatusUpdateEvent rejects null ids, and the wire message may omit them — the
-     * dispatcher's resolved identity lives on {@link AgentExecutionContext#currentTask()},
-     * so read it there before falling back to the incoming message / fresh UUIDs.
+     * Rebuilds the expression from the previous user turns plus the current input.
+     *
+     * <p>On a resumed {@code INPUT_REQUIRED} task the task history holds {@code "2 +"} and
+     * the incoming message holds {@code "3"}; joining them yields {@code "2 + 3"} without
+     * the agent touching task ids.</p>
      */
-    private static String resolveTaskId(final AgentExecutionContext context) {
-        final var fromTask = context.currentTask().map(Task::id);
-        return fromTask.orElseGet(() -> orUuid(context.incoming().taskId()));
+    private static String expression(final A2ARequest request) {
+        final var pieces = new ArrayList<String>();
+        final var task = request.currentTask().orElse(null);
+        if (Objects.nonNull(task) && Objects.nonNull(task.history())) {
+            task.history().forEach(message -> collectUserText(message, pieces));
+        }
+        if (!alreadyInHistory(task, request.incoming())) {
+            collectUserText(request.incoming(), pieces);
+        }
+        return String.join(" ", pieces).strip();
     }
 
-    private static String resolveContextId(final AgentExecutionContext context,
-                                           final String fallback) {
-        return context.currentTask()
-                .map(Task::contextId)
-                .or(() -> Optional.ofNullable(context.incoming().contextId()).filter(id -> !id.isBlank()))
-                .filter(id -> !id.isBlank())
-                .orElse(fallback);
+    private static boolean alreadyInHistory(final Task task,
+                                            final Message incoming) {
+        if (Objects.isNull(task) || Objects.isNull(task.history()) ||
+                Objects.isNull(incoming) || Objects.isNull(incoming.messageId())) {
+            return false;
+        }
+        return task.history().stream()
+                .anyMatch(message -> incoming.messageId().equals(message.messageId()));
     }
 
-    private static String orUuid(final String value) {
-        return Objects.nonNull(value) && !value.isBlank() ? value : UUID.randomUUID().toString();
+    private static void collectUserText(final Message message,
+                                        final List<String> target) {
+        if (Objects.isNull(message) || message.role() != Message.Role.ROLE_USER) {
+            return;
+        }
+        for (final Part<?> part : message.parts()) {
+            if (part instanceof final TextPart text && Objects.nonNull(text.text()) && !text.text().isBlank()) {
+                target.add(text.text().strip());
+            }
+        }
     }
 
-    /**
-     * Evaluates {@code <left> <op> <right>} with single-space-separated tokens; anything
-     * else is rejected as an invalid-params A2A error.
-     */
-    private static String evaluate(final String expression) {
-        final var tokens = expression.trim().split("\\s+");
+    private static String evaluate(final String[] tokens) {
         if (tokens.length != EXPRESSION_TOKENS) {
-            throw invalidParams("expected '<int> <op> <int>' but got: " + expression);
+            throw new InvalidExpressionException("Expected '<number> <op> <number>' but got: "
+                    + String.join(" ", tokens));
         }
         final var left = parseOperand(tokens[0]);
         final var right = parseOperand(tokens[2]);
@@ -95,7 +103,7 @@ public class MathAgentExecutor extends AbstractA2AAgentExecutor {
             case OP_SUBTRACT -> String.valueOf(left - right);
             case OP_MULTIPLY -> String.valueOf((long) left * right);
             case OP_DIVIDE -> divide(left, right);
-            default -> throw invalidParams("unsupported operator: " + tokens[1]);
+            default -> throw new InvalidExpressionException("Unsupported operator: " + tokens[1]);
         };
     }
 
@@ -103,28 +111,25 @@ public class MathAgentExecutor extends AbstractA2AAgentExecutor {
         try {
             return Integer.parseInt(token);
         } catch (final NumberFormatException e) {
-            throw invalidParams("operand is not an integer: " + token);
+            throw new InvalidExpressionException("Operand is not an integer: " + token);
         }
     }
 
     private static String divide(final int left,
                                  final int right) {
         if (right == 0) {
-            throw invalidParams("division by zero");
+            throw new InvalidExpressionException("Division by zero");
         }
         return String.valueOf(left / right);
     }
 
-    private static Optional<String> firstText(final Message message) {
-        return message.parts().stream()
-                .filter(TextPart.class::isInstance)
-                .map(TextPart.class::cast)
-                .map(TextPart::text)
-                .filter(text -> !text.isBlank())
-                .findFirst();
-    }
+    /**
+     * Signals a malformed expression to the request handler.
+     */
+    private static final class InvalidExpressionException extends RuntimeException {
 
-    private static A2AError invalidParams(final String message) {
-        return new A2AError(INVALID_PARAMS_CODE, message, Map.of());
+        private InvalidExpressionException(final String message) {
+            super(message);
+        }
     }
 }

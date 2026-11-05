@@ -31,7 +31,8 @@ public final class PropertiesKeyProvider implements KeyProvider {
     private final Map<String, KeyHandle> keys = new LinkedHashMap<>();
     private final String activeKeyId;
 
-    public PropertiesKeyProvider(final String activeKeyId, final Map<String, String> encodedKeys) {
+    public PropertiesKeyProvider(final String activeKeyId,
+                                 final Map<String, String> encodedKeys) {
         if (Objects.isNull(activeKeyId) || activeKeyId.isBlank()) {
             throw new CryptoConfigurationException("activeKeyId must not be blank");
         }
@@ -63,7 +64,9 @@ public final class PropertiesKeyProvider implements KeyProvider {
         return keys.values().stream().map(KeyHandle::metadata).toList();
     }
 
-    private static KeyHandle toHandle(final String id, final String encoded, final boolean active) {
+    private static KeyHandle toHandle(final String id,
+                                      final String encoded,
+                                      final boolean active) {
         if (Objects.isNull(encoded) || encoded.isBlank()) {
             throw new CryptoConfigurationException("Key '" + id + "' is blank");
         }

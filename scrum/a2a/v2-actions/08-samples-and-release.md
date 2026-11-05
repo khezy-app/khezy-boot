@@ -87,17 +87,12 @@ Encryption check (second server profile with H2 + key):
   - who it is for (KHEZY tone: beginners, experienced devs, bootstrap projects).
 - Module READMEs: `a2a-core`, `a2a-core-default`, `a2a-store-jpa`, `a2a-spring-ai`,
   `a2a-spring-boot-starter` — API surface, property tables, gotchas.
-- `scrum/a2a/README.md` — index (design v2, v2 actions, archive).
-- `scrum/a2a/_archive-v1/README.md` — one paragraph: "superseded by v2; kept for
-  historical context. Do not implement."
-- `RELEASE-NOTES-v2.md`:
-  - breaking changes vs v1 (deleted ports/dispatcher/controllers; no `A2AAgentExecutor`,
-    `CallerIdentity`, `ChatClientExecutors`);
+- `scrum/a2a/README.md` — index (design, action plan, handoff log).
+- `RELEASE-NOTES.md`:
   - new `a2a-store-jpa` + encryption;
   - SDK baseline **1.4.0.Final**;
   - adopted 1.4 features: multi-tenancy routers, SSE config, `application/a2a+json`,
-    `TaskStreamLifecycleHook`, push config create-only semantics, manual-wiring fix;
-  - migration table from design §10.
+    `TaskStreamLifecycleHook`, push config create-only semantics, manual-wiring fix.
 
 ## 5. Full verification
 

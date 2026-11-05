@@ -73,8 +73,7 @@ public final class DefaultKeyRotationService implements KeyRotationService {
             final var context = new KeyTransitionContext(request.actor(),
                     request.reason().name(), now, now.plus(request.retainOldFor()));
             keyManager.swapActive(newKeyId, previousStatus, context);
-            publish(new KeyEvent("ROTATED", newKeyId, oldKeyId, request.actor(),
-                    request.reason().name(), now));
+            publish(new KeyEvent("ROTATED", newKeyId, oldKeyId, request.actor(), request.reason().name(), now));
             return new RotationResult(oldKeyId, newKeyId, request.mode(), previousStatus,
                     request.mode() != RotationMode.GRADUAL);
         } catch (final RuntimeException e) {

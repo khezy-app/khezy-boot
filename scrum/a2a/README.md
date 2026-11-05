@@ -1,32 +1,14 @@
-# KHEZY A2A — Design & Plan Index
+# KHEZY A2A — documentation index
 
 | Document | Purpose |
 |---|---|
-| [`a2a-design-v2.md`](a2a-design-v2.md) | **Current design.** SDK-first A2A layer: server seam, client ergonomics, JPA + encryption, Spring AI tooling. |
-| [`sdk-1.4-adoption.md`](sdk-1.4-adoption.md) | **SDK 1.4 research.** What changed since 1.3.1 and what we adopt (multi-tenancy, SSE config, HTTP client SPI, push semantics, hooks, OTel, TCK). |
-| [`v2-actions/00-plan-overview.md`](v2-actions/00-plan-overview.md) | **Current execution plan.** Verified SDK 1.4 facts, module layout, task graph, cleanup manifest. |
-| [`v2-actions/`](v2-actions/) | Agent-executable tasks A2A2-01 … A2A2-09. |
-| [`_archive-v1/`](_archive-v1/) | Superseded v1 design and action plan. Historical only — do not implement. |
+| [Design](a2a-design-v2.md) | Architecture and module map |
+| [Action plan](v2-actions/00-plan-overview.md) | Task graph and conventions |
+| [Handoff log](v2-actions/99-handoff-log.md) | Per-task status and lessons |
+| [SDK 1.4 adoption notes](sdk-1.4-adoption.md) | Reference |
 
-## One-line difference
-
-- **v1:** re-implemented the A2A protocol (dispatcher, stores, JSON-RPC controllers) on
-  top of the SDK types.
-- **v2:** keeps the SDK runtime intact and adds Spring assembly, a business-logic seam,
-  encryption at rest, client ergonomics, and LLM tooling.
-
-## Related
-
-- Encryption at rest (payload stores, key rotation) is provided by the shared
-  [`scrum/crypto`](../crypto/crypto-library-design.md) utility. The A2A store consumes
-  `StringEncryptor`; it does not implement its own cipher.
-
-## Start here
-
-1. Read `a2a-design-v2.md`.
-2. Read `v2-actions/00-plan-overview.md`.
-3. Execute tasks in order, appending a handoff entry to
-   `v2-actions/99-handoff-log.md` after each.
+Start with the design, then the action plan. Every task handoff lives in the log, not in
+chat.
 
 ## Automated execution
 

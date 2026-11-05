@@ -77,9 +77,9 @@ Version bumps: all library modules `2.0.0` (breaking major). Samples stay
 - Update `ai/a2a/README.md` to a short "work in progress — see scrum/a2a/a2a-design-v2.md"
   placeholder; the full README is task 08.
 - Add `scrum/a2a/README.md` index:
-  - design v2 link,
-  - v2 actions link,
-  - `_archive-v1/` marked superseded.
+  - design link,
+  - action plan link,
+  - handoff log link.
 
 ## 3. Verification
 

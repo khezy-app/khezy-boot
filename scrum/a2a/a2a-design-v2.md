@@ -1,29 +1,27 @@
-# KHEZY A2A — Design v2
+# KHEZY A2A — Design
 
 > Build **around** the official A2A Java SDK, not around a re-implementation of the
 > protocol. The SDK already owns the wire model, task lifecycle, event bus, JSON-RPC
 > handling, authorization contract, and client transports. KHEZY adds the Spring-native
 > glue, the business-logic seam, encryption-at-rest, client ergonomics, and LLM tooling.
->
-> Supersedes `_archive-v1/a2a-core-library-design.md`.
 
-Status: approved direction (v2 draft)
+Status: approved direction
 Date: 2026-10-19
 Baseline: `org.a2aproject.sdk:*:1.4.0.Final`, Spring Boot 4.1.0, Spring AI 2.0.1, Java 17
 Adoption review: `sdk-1.4-adoption.md` (what changed since 1.3.1 and why we take it)
 
 ---
 
-## 1. Why v2
+## 1. Why this design
 
-The v1 design treated the SDK as a wire-model library and re-implemented the server
-runtime around it:
+The SDK is a runtime, not just a wire-model library. Re-implementing the server around
+it duplicates work and creates drift risk:
 
-- `A2ARequestDispatcher` duplicated `DefaultRequestHandler` (task creation, state
-  transitions, event publishing, cancellation).
-- `A2ATaskStore` / `A2AEventQueue` / `PushNotificationSender` duplicated SDK interfaces.
-- `MessageController` / `TaskController` re-parsed JSON-RPC and re-serialized responses.
-- `A2AAgentExecutor` redefined the execution contract that the SDK already defines.
+- a custom dispatcher would duplicate `DefaultRequestHandler` (task creation, state
+  transitions, event publishing, cancellation);
+- custom task/event/push stores would duplicate the SDK interfaces;
+- custom controllers would re-parse JSON-RPC and re-serialize responses;
+- a custom executor contract would redefine what the SDK already defines.
 
 That is protocol redesign in disguise. It creates drift risk on every SDK upgrade,
 loses the SDK's fixes (streaming, replication, extended cards, push notifications,
@@ -31,7 +29,7 @@ multi-tenancy, authorization), and forces consumers to learn *our* model **and**
 
 The reference implementation at `/mnt/data/refs-proj/kflowllmlap/a2a-*` validates the
 opposite approach: keep the SDK runtime intact, wrap it with small Spring-friendly
-seams. v2 adopts that model and adds the two differentiators the user asked for:
+seams. This design adopts that model and adds the two key differentiators:
 
 1. **Encryption at rest** for A2A store payloads (the SDK stores JSON as plain text).
 2. **Abstracted business-logic seam** so consumers implement only their agent logic.

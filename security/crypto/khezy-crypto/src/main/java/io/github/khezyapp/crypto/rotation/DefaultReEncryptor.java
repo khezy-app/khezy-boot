@@ -15,13 +15,15 @@ public final class DefaultReEncryptor implements ReEncryptor {
     private final Encryptor encryptor;
     private final CipherTextCodec codec;
 
-    public DefaultReEncryptor(final Encryptor encryptor, final CipherTextCodec codec) {
+    public DefaultReEncryptor(final Encryptor encryptor,
+                              final CipherTextCodec codec) {
         this.encryptor = Objects.requireNonNull(encryptor, "encryptor");
         this.codec = Objects.requireNonNull(codec, "codec");
     }
 
     @Override
-    public String reEncrypt(final String storedValue, final CipherContext context) {
+    public String reEncrypt(final String storedValue,
+                            final CipherContext context) {
         Objects.requireNonNull(storedValue, "storedValue");
         Objects.requireNonNull(context, "context");
         final var current = codec.decode(storedValue);
